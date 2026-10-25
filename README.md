@@ -31,6 +31,10 @@ Bookmarks inside an app are easy to collect and hard to use: the post may disapp
   <img src="docs/screenshots/note.jpg" width="860">
 </picture>
 
+**纸墨风格 (Paper & ink style, optional).** Turn it on in settings for a paper-and-ink look. Off by default, so the windows follow your theme. Below: one new post and one already saved, previewed together.
+
+<img src="docs/screenshots/paper-preview.jpg" width="860">
+
 ## Install
 
 1. Download `obsidian-evidence-inbox-0.1.0.zip` from the latest release.

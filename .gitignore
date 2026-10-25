@@ -1,0 +1,10 @@
+node_modules/
+.pnpm-store/
+main.js
+data.json
+*.log
+coverage/
+release/
+*.zip
+.DS_Store
+**/.DS_Store

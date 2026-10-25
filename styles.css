@@ -1,0 +1,81 @@
+.evidence-inbox-modal {
+  width: min(860px, 92vw);
+}
+
+.evidence-inbox-input {
+  box-sizing: border-box;
+  min-height: 12rem;
+  width: 100%;
+  resize: vertical;
+  font-family: var(--font-text);
+}
+
+.evidence-inbox-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--size-4-2);
+  margin-top: var(--size-4-4);
+}
+
+.evidence-inbox-progress {
+  width: 100%;
+}
+
+.evidence-inbox-preview-list,
+.evidence-inbox-results {
+  display: grid;
+  gap: var(--size-4-3);
+  max-height: 52vh;
+  overflow: auto;
+  padding: var(--size-4-1);
+}
+
+.evidence-inbox-preview-card,
+.evidence-inbox-result {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  padding: var(--size-4-3);
+  background: var(--background-secondary);
+}
+
+.evidence-inbox-preview-card.is-failure,
+.evidence-inbox-result.is-failed {
+  border-color: var(--color-red);
+}
+
+.evidence-inbox-result.is-partial {
+  border-color: var(--color-orange);
+}
+
+.evidence-inbox-preview-header {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-2);
+}
+
+.evidence-inbox-badge {
+  margin-left: auto;
+  border-radius: 999px;
+  padding: 0.1rem 0.55rem;
+  color: var(--text-accent);
+  background: var(--background-modifier-hover);
+  font-size: var(--font-ui-smaller);
+}
+
+.evidence-inbox-excerpt {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  color: var(--text-muted);
+}
+
+.evidence-inbox-preview-card code {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.evidence-inbox-result button {
+  margin-top: var(--size-4-2);
+}

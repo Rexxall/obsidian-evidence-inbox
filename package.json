@@ -1,0 +1,34 @@
+{
+  "name": "obsidian-evidence-inbox",
+  "version": "0.1.0",
+  "description": "Turn user-submitted Xiaohongshu share links into source-backed, actionable Obsidian notes.",
+  "main": "main.js",
+  "type": "module",
+  "scripts": {
+    "build": "node esbuild.config.mjs production",
+    "dev": "node esbuild.config.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "check": "pnpm run typecheck && pnpm run test && pnpm run build"
+  },
+  "keywords": [
+    "obsidian",
+    "xiaohongshu",
+    "rednote",
+    "evidence",
+    "knowledge-management"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "builtin-modules": "^4.0.0",
+    "esbuild": "^0.28.0",
+    "obsidian": "^1.11.4",
+    "typescript": "^5.7.2",
+    "vitest": "^4.1.7"
+  },
+  "author": "Rexxall"
+}

@@ -1,0 +1,10 @@
+{
+  "id": "evidence-inbox",
+  "name": "Evidence Inbox",
+  "version": "0.1.0",
+  "minAppVersion": "1.11.4",
+  "description": "Paste Xiaohongshu share links, preview them, and save each public note with its images as a source-backed Markdown note. No login, no background sync.",
+  "author": "Rexxall",
+  "isDesktopOnly": true,
+  "authorUrl": "https://github.com/Rexxall"
+}

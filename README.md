@@ -56,9 +56,22 @@ Only archive content you are entitled to keep, and keep the source link.
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/PRD.md](docs/PRD.md).
 
+`styles.css` is generated. Edit `styles/plugin.css` (or the shared `styles/kit.css`, the same in all of my plugins) and run `npm run styles`.
+
+## Changelog
+
+**0.2.0**
+
+- Import window redesigned: three steps (paste, preview, import), one row per link with its status, and the reason when a link is left out. The card type is a one-click choice.
+- Generated notes show in reading view which part the plugin refreshes, which part is yours once created, and which part it never touches.
+- Optional **纸墨风格 (Paper & ink style)** in settings. Off by default, so the windows follow your theme.
+- Styles rewritten from scratch on a small shared style kit.
+
+**0.1.0** — First public alpha.
+
 ## Status
 
-`0.1.0 alpha`. 52 automated tests pass, using synthetic page fixtures. The 30-sample check on real public posts described in [docs/TEST_SAMPLES.md](docs/TEST_SAMPLES.md) has not been run yet, so real-world success rates are not claimed. Mobile is untested.
+`0.2.0 alpha`. 55 automated tests pass, using synthetic page fixtures. The 30-sample check on real public posts described in [docs/TEST_SAMPLES.md](docs/TEST_SAMPLES.md) has not been run yet, so real-world success rates are not claimed. Mobile is untested.
 
 ## License
 

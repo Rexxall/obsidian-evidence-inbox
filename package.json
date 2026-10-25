@@ -1,6 +1,6 @@
 {
   "name": "obsidian-evidence-inbox",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Turn user-submitted Xiaohongshu share links into source-backed, actionable Obsidian notes.",
   "main": "main.js",
   "type": "module",

@@ -22,6 +22,17 @@ export class EvidenceInboxSettingTab extends PluginSettingTab {
       .setDesc("重新打开可恢复的新手说明。")
       .addButton((button) => button.setButtonText("打开说明").onClick(() => this.owner.openOnboarding()));
 
+    new Setting(containerEl)
+      .setName("纸墨风格（Paper & ink style）")
+      .setDesc("纸色底、细墨线、衬线数字，强调色用暗红和青绿。关闭时跟随 Obsidian 主题。")
+      .addToggle((toggle) => toggle
+        .setValue(this.owner.settings.paperStyle)
+        .onChange(async (value) => {
+          this.owner.settings.paperStyle = value;
+          await this.owner.saveSettings();
+          this.owner.applyPaperStyle();
+        }));
+
     this.addFolderSetting("原始笔记目录", "captureFolder", "Evidence Inbox/小红书");
     this.addFolderSetting("图片目录", "mediaFolder", "Evidence Inbox/Assets");
     this.addFolderSetting("报告目录", "reportFolder", "Evidence Inbox/Reports");

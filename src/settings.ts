@@ -14,6 +14,7 @@ export interface EvidenceInboxSettings {
   aiModel: string;
   userContext: string;
   hasSeenOnboarding: boolean;
+  paperStyle: boolean;
 }
 
 export const DEFAULT_SETTINGS: EvidenceInboxSettings = {
@@ -27,7 +28,8 @@ export const DEFAULT_SETTINGS: EvidenceInboxSettings = {
   aiBaseUrl: "https://api.openai.com/v1",
   aiModel: "",
   userContext: "",
-  hasSeenOnboarding: false
+  hasSeenOnboarding: false,
+  paperStyle: false
 };
 
 const TEMPLATES = new Set<KnowledgeTemplateId>(["raw", "research", "japan", "creator"]);
@@ -59,7 +61,8 @@ export function normalizeSettings(value: unknown): EvidenceInboxSettings {
       : DEFAULT_SETTINGS.aiBaseUrl,
     aiModel: typeof loaded.aiModel === "string" ? loaded.aiModel.trim() : "",
     userContext: typeof loaded.userContext === "string" ? loaded.userContext.trim().slice(0, 4_000) : "",
-    hasSeenOnboarding: booleanValue(loaded.hasSeenOnboarding, false)
+    hasSeenOnboarding: booleanValue(loaded.hasSeenOnboarding, false),
+    paperStyle: booleanValue(loaded.paperStyle, false)
   };
 }
 

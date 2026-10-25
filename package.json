@@ -5,7 +5,8 @@
   "main": "main.js",
   "type": "module",
   "scripts": {
-    "build": "node esbuild.config.mjs production",
+    "build": "node styles/build.mjs && node esbuild.config.mjs production",
+    "styles": "node styles/build.mjs",
     "dev": "node esbuild.config.mjs",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",

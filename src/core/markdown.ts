@@ -131,7 +131,7 @@ export function renderManagedBlock(input: WriteNoteInput): string {
     "",
     safeSourceText(source.body) || "（未提取到正文，请打开原链接核对）",
     "",
-    source.tags.length ? `标签：${source.tags.map((tag) => `#${safeSourceText(tag)}`).join(" ")}` : "",
+    source.tags.length ? `标签： ${source.tags.map((tag) => `#${safeSourceText(tag)}`).join(" ")}` : "",
     "",
     "## 原始图片",
     "",

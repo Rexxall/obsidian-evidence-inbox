@@ -20,7 +20,8 @@ export function extractShareUrls(input: string, maxItems = 10): ParsedShareUrls 
   const matches = input.match(URL_PATTERN) ?? [];
 
   for (const match of matches) {
-    const candidate = trimTrailingPunctuation(match);
+    // Older share texts use http:// short links; the page is always fetched over https.
+    const candidate = trimTrailingPunctuation(match).replace(/^http:\/\//i, "https://");
     if (!isAllowedXhsPageUrl(candidate)) {
       rejected.push(stripUrlSecrets(candidate));
       continue;

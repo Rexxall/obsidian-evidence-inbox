@@ -25,9 +25,7 @@ export class EvidenceInboxOnboardingModal extends Modal {
     });
     new Setting(contentEl)
       .addButton((button) => button.setButtonText("稍后再说").onClick(() => this.close()))
-      .addButton((button) => button.setButtonText("开始导入").setCta().onClick(async () => {
-        this.owner.settings.hasSeenOnboarding = true;
-        await this.owner.saveSettings();
+      .addButton((button) => button.setButtonText("开始导入").setCta().onClick(() => {
         this.close();
         this.owner.openImportModal();
       }));
@@ -35,5 +33,10 @@ export class EvidenceInboxOnboardingModal extends Modal {
 
   onClose(): void {
     this.contentEl.empty();
+    // Show it once; it stays available through the quick-start command.
+    if (!this.owner.settings.hasSeenOnboarding) {
+      this.owner.settings.hasSeenOnboarding = true;
+      void this.owner.saveSettings();
+    }
   }
 }

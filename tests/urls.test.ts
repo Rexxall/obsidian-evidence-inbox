@@ -15,6 +15,12 @@ describe("share URL parsing", () => {
     ]);
   });
 
+  it("upgrades http share links to https", () => {
+    const parsed = extractShareUrls("复制本条信息 http://xhslink.com/a/oldCode456，打开【小红书】App查看");
+    expect(parsed.urls).toEqual(["https://xhslink.com/a/oldCode456"]);
+    expect(parsed.rejected).toEqual([]);
+  });
+
   it("deduplicates direct links by note ID without retaining extra copies", () => {
     const parsed = extractShareUrls([
       "https://www.xiaohongshu.com/explore/67abc1230000000012345678?a=1",

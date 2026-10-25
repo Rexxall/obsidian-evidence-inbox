@@ -8,6 +8,8 @@
 
 [Features](#features) · [Install](#install) · [Privacy and safety](#privacy-and-safety) · [How it works](#how-it-works) · [中文说明](#中文说明) · [日本語](#日本語)
 
+<img src="docs/screenshots/preview.jpg" width="860">
+
 </div>
 
 ## Why
@@ -23,6 +25,11 @@ Bookmarks inside an app are easy to collect and hard to use: the post may disapp
 - **No duplicates.** The same post imported three times stays one note; only the plugin-managed part is refreshed, and your card and notes are never touched.
 - **Honest failures.** Each link gets its own result (created, updated, partial, skipped, failed); one failure does not stop the batch, and a report is written for larger imports.
 - **Optional AI** with your own key and endpoint, off by default. Without it, everything except the AI draft still works.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/note-dark.jpg">
+  <img src="docs/screenshots/note.jpg" width="860">
+</picture>
 
 ## Install
 
@@ -51,7 +58,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/PRD.md](docs/PRD.md).
 
 ## Status
 
-`0.1.0 alpha`. 51 automated tests pass, using synthetic page fixtures. The 30-sample check on real public posts described in [docs/TEST_SAMPLES.md](docs/TEST_SAMPLES.md) has not been run yet, so real-world success rates are not claimed. Mobile is untested.
+`0.1.0 alpha`. 52 automated tests pass, using synthetic page fixtures. The 30-sample check on real public posts described in [docs/TEST_SAMPLES.md](docs/TEST_SAMPLES.md) has not been run yet, so real-world success rates are not claimed. Mobile is untested.
 
 ## License
 

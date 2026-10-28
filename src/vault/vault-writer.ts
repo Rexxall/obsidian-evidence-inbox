@@ -43,8 +43,8 @@ function sourceIdFromContent(content: string): string {
   const raw = frontmatter.match(/^evidence_source_id\s*:\s*(.+)$/mu)?.[1]?.trim() ?? "";
   if (!raw) return "";
   try {
-    const parsed = JSON.parse(raw);
-    return typeof parsed === "string" ? parsed.trim() : String(parsed ?? "").trim();
+    const parsed: unknown = JSON.parse(raw);
+    return typeof parsed === "string" ? parsed.trim() : typeof parsed === "number" ? String(parsed) : "";
   } catch {
     return raw.replace(/^['"]|['"]$/g, "").trim();
   }
@@ -129,7 +129,7 @@ export class EvidenceVaultWriter {
         };
       }
       try {
-        await this.app.fileManager.processFrontMatter(existing, (frontmatter) => {
+        await this.app.fileManager.processFrontMatter(existing, (frontmatter: Record<string, unknown>) => {
           const currentTags = frontmatterTags(frontmatter.tags);
           const previousTemplate = frontmatter.knowledge_template;
           const previousAiState = frontmatter.ai_status;

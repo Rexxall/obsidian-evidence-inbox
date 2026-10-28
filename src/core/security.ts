@@ -2,19 +2,24 @@ const XHS_PAGE_HOSTS = new Set([
   "xiaohongshu.com",
   "www.xiaohongshu.com",
   "m.xiaohongshu.com",
+  "rednote.com",
+  "www.rednote.com",
   "xhslink.com",
   "www.xhslink.com",
   "xhslink.cn",
-  "www.xhslink.cn"
+  "www.xhslink.cn",
+  "xhs.cn",
+  "www.xhs.cn"
 ]);
+const XHS_SHORT_HOSTS = new Set(["xhslink.com", "www.xhslink.com", "xhslink.cn", "www.xhslink.cn", "xhs.cn", "www.xhs.cn"]);
 const XHS_NOTE_PATH_PATTERN = /^\/(?:explore|discovery\/item)\/[0-9a-fA-F]{24}\/?$/;
-const XHS_SHORT_PATH_PATTERN = /^\/[a-zA-Z0-9_-]{1,32}\/[a-zA-Z0-9_-]{2,128}\/?$/;
+const XHS_SHORT_PATH_PATTERN = /^\/(?:[a-zA-Z0-9_-]{1,32}\/)?[a-zA-Z0-9_-]{2,128}\/?$/;
 
 const SECRET_KEY_PATTERN = /\b(?:api[_-]?key|x-api-key|key|token|cookie|authorization|a1|web_session)[-_a-z0-9]*\s*[:=]\s*[^\s,;]+/gi;
 const SENSITIVE_HEADER_PATTERN = /\b(?:authorization|cookie|set-cookie|x-api-key)\s*[:=]\s*[^\r\n]+/gi;
 const SENSITIVE_JSON_PATTERN = /["'](?:authorization|cookie|set-cookie|x-api-key|api[_-]?key|token)["']\s*:\s*["'][^"'\r\n]*["']/gi;
 const BARE_KEY_PATTERN = /\bsk-[a-z0-9_-]{8,}\b/gi;
-const BEARER_PATTERN = /\bbearer\s+[a-z0-9._~+\/-]{8,}/gi;
+const BEARER_PATTERN = /\bbearer\s+[a-z0-9._~+/-]{8,}/gi;
 const URL_QUERY_PATTERN = /(https?:\/\/[^\s?#]+)[?#][^\s]*/gi;
 
 export function isAllowedXhsPageUrl(value: string): boolean {
@@ -28,8 +33,7 @@ export function isAllowedXhsPageUrl(value: string): boolean {
       url.password ||
       !XHS_PAGE_HOSTS.has(hostname)
     ) return false;
-    const shortHost = hostname === "xhslink.com" || hostname === "www.xhslink.com" || hostname === "xhslink.cn" || hostname === "www.xhslink.cn";
-    return shortHost ? XHS_SHORT_PATH_PATTERN.test(url.pathname) : XHS_NOTE_PATH_PATTERN.test(url.pathname);
+    return XHS_SHORT_HOSTS.has(hostname) ? XHS_SHORT_PATH_PATTERN.test(url.pathname) : XHS_NOTE_PATH_PATTERN.test(url.pathname);
   } catch {
     return false;
   }
@@ -65,7 +69,9 @@ export function stripUrlSecrets(value: string): string {
 }
 
 export function sanitizeDiagnostic(value: unknown, maxLength = 240): string {
-  const raw = value instanceof Error ? value.message : String(value ?? "Unknown error");
+  const raw = value instanceof Error
+    ? value.message
+    : typeof value === "string" ? value : value == null ? "Unknown error" : JSON.stringify(value) ?? "Unknown error";
   const sanitized = raw
     .replace(SENSITIVE_JSON_PATTERN, "[redacted]")
     .replace(SENSITIVE_HEADER_PATTERN, "[redacted]")

@@ -105,7 +105,7 @@ function withAbort<T>(promise: Promise<T>, signal?: AbortSignal): Promise<T> {
     signal.addEventListener("abort", onAbort, { once: true });
     promise.then(
       (value) => { cleanup(); resolve(value); },
-      (error: unknown) => { cleanup(); reject(error); }
+      (error: unknown) => { cleanup(); reject(error instanceof Error ? error : new Error(String(error))); }
     );
   });
 }
@@ -160,7 +160,7 @@ async function oneRequest(
       if (settled) return;
       settled = true;
       cleanup();
-      reject(error);
+      reject(error instanceof Error ? error : new Error(String(error)));
     };
     const finishSuccess = (value: SafeGetResponse & { location?: string }): void => {
       if (settled) return;
@@ -173,11 +173,11 @@ async function oneRequest(
       headers: {
         accept: "text/html,application/xhtml+xml,image/avif,image/webp,image/*,*/*;q=0.8",
         "accept-encoding": "gzip, deflate, br",
-        "user-agent": "Mozilla/5.0 EvidenceInbox/0.1 (Obsidian desktop plugin)"
+        "user-agent": "Mozilla/5.0 EvidenceInbox/0.3 (Obsidian desktop plugin)"
       },
       lookup: ((_hostname: string, _options: unknown, callback: (error: NodeJS.ErrnoException | null, address: string, family: number) => void) => {
         callback(null, pinned.address, pinned.family);
-      }) as never,
+      }),
       servername: url.hostname
     }, (response) => {
       const headers = normalizedHeaders(response.headers);

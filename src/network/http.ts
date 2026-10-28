@@ -57,7 +57,7 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string,
         if (settled) return;
         settled = true;
         cleanup();
-        reject(error);
+        reject(error instanceof Error ? error : new Error(String(error)));
       }
     );
   });

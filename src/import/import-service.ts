@@ -61,6 +61,9 @@ function cloneSource(source: EvidenceSource): EvidenceSource {
 }
 
 export class EvidenceImportService {
+  /** Pause between two page requests, so a batch reads like a person opening links one after another. */
+  static pageGapMs = 1_200;
+
   private readonly publicClient: XhsPublicClient;
   private readonly aiClient: AiKnowledgeClient;
   private readonly writer: EvidenceVaultWriter;
@@ -77,6 +80,20 @@ export class EvidenceImportService {
     this.writer = new EvidenceVaultWriter(app, settings);
   }
 
+  private pause(ms: number): Promise<void> {
+    if (ms <= 0 || this.signal?.aborted) return Promise.resolve();
+    return new Promise((resolve) => {
+      const timer = window.setTimeout(done, ms);
+      const signal = this.signal;
+      function done(): void {
+        window.clearTimeout(timer);
+        signal?.removeEventListener("abort", done);
+        resolve();
+      }
+      signal?.addEventListener("abort", done, { once: true });
+    });
+  }
+
   private assertActive(): void {
     if (this.signal?.aborted) throw new Error("操作已取消。");
   }
@@ -86,7 +103,8 @@ export class EvidenceImportService {
     onProgress?: (progress: BatchProgress) => void
   ): Promise<PreviewItem[]> {
     let completed = 0;
-    const previews = await mapWithConcurrency(urls, 3, async (inputUrl): Promise<PreviewItem> => {
+    const previews = await mapWithConcurrency(urls, 1, async (inputUrl, index): Promise<PreviewItem> => {
+      if (index > 0) await this.pause(EvidenceImportService.pageGapMs);
       this.assertActive();
       try {
         const source = await this.publicClient.fetchPublicNote(inputUrl);

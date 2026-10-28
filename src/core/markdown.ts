@@ -22,12 +22,12 @@ function safeSourceText(value: string): string {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/([\\`*_{}\[\]()#+\-.!|>~$%^])/g, "\\$1")
+    .replace(/([\\`*_{}[\]()#+\-.!|>~$%^])/g, "\\$1")
     .trim();
 }
 
 function safeWikiPath(value: string): string {
-  return value.replace(/[\[\]|#^\r\n]/g, "-");
+  return value.replace(/[[\]|#^\r\n]/g, "-");
 }
 
 function renderList(values: string[]): string {

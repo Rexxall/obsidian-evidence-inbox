@@ -19,6 +19,33 @@
   font-family: var(--font-text);
 }
 
+/* Clipboard offer */
+.evidence-inbox-modal .ei-clip:empty { display: none; }
+.evidence-inbox-modal .ei-clip { margin-top: 8px; }
+.evidence-inbox-modal .ei-clip-chip {
+  height: auto;
+  padding: 4px 10px;
+  border: 1px dashed var(--rk-accent);
+  border-radius: var(--radius-l, 999px);
+  background: var(--rk-accent-soft);
+  box-shadow: none;
+  color: var(--rk-text);
+  font-size: var(--font-ui-small);
+}
+.evidence-inbox-modal .ei-clip-chip:hover { border-style: solid; }
+
+/* Settings */
+.evidence-inbox-settings .ei-settings-intro {
+  margin: 0 0 12px;
+  color: var(--rk-muted);
+  font-size: var(--font-ui-small);
+}
+.evidence-inbox-settings .ei-code {
+  font-family: var(--font-monospace);
+  font-size: var(--font-ui-smaller);
+  user-select: all;
+}
+
 /* Steps */
 .evidence-inbox-modal .ei-steps {
   display: flex;

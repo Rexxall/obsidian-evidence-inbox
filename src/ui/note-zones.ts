@@ -35,7 +35,8 @@ export function zoneAt(lines: string[], line: number): { zone: NoteZone; first: 
 
 /** Reading view: mark each block with the zone it belongs to, and label the first block of a zone. */
 export function decorateNoteZones(element: HTMLElement, context: MarkdownPostProcessorContext): void {
-  if (!context.frontmatter?.evidence_inbox_version) return;
+  const frontmatter = context.frontmatter as Record<string, unknown> | undefined;
+  if (!frontmatter?.evidence_inbox_version) return;
   const info = context.getSectionInfo(element);
   if (!info) return;
   const found = zoneAt(info.text.split("\n"), info.lineStart);

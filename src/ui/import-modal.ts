@@ -35,8 +35,11 @@ export class EvidenceImportModal extends Modal {
   private controller: AbortController | null = null;
   private progressStep: 2 | 3 = 2;
 
-  constructor(app: App, private readonly owner: EvidenceInboxPlugin) {
+  private stage: "input" | "other" = "input";
+
+  constructor(app: App, private readonly owner: EvidenceInboxPlugin, initialText = "") {
     super(app);
+    this.inputText = initialText.trim();
     this.template = owner.settings.defaultTemplate;
     this.localizeImages = owner.settings.localizeImagesByDefault;
   }
@@ -70,7 +73,16 @@ export class EvidenceImportModal extends Modal {
     super.close();
   }
 
+  /** Adds links handed over while the window is still on its first step. Returns false once it has moved on. */
+  appendInput(text: string): boolean {
+    if (this.busy || this.stage !== "input") return false;
+    this.inputText = [this.inputText, text.trim()].filter(Boolean).join("\n");
+    this.renderInput();
+    return true;
+  }
+
   private renderInput(): void {
+    this.stage = "input";
     this.titleEl.setText("导入小红书公开笔记");
     const { contentEl } = this;
     contentEl.empty();
@@ -82,6 +94,8 @@ export class EvidenceImportModal extends Modal {
     });
     textarea.value = this.inputText;
     textarea.addEventListener("input", () => { this.inputText = textarea.value; });
+    const detected = contentEl.createDiv({ cls: "ei-clip" });
+    void this.offerClipboard(detected, textarea);
     const foot = this.renderFoot("预览阶段不会写入 Vault · 不登录账号，不读收藏");
     const quickStart = foot.createEl("button", { text: "使用说明" });
     quickStart.addEventListener("click", () => {
@@ -90,6 +104,28 @@ export class EvidenceImportModal extends Modal {
     });
     const preview = foot.createEl("button", { text: "预览", cls: "mod-cta" });
     preview.addEventListener("click", () => void this.loadPreview());
+  }
+
+  /** Offers, never fills on its own: links found on the clipboard are added only when the chip is clicked. */
+  private async offerClipboard(holder: HTMLElement, textarea: HTMLTextAreaElement): Promise<void> {
+    let text = "";
+    try {
+      text = await navigator.clipboard.readText();
+    } catch {
+      return;
+    }
+    if (this.disposed || !holder.isConnected) return;
+    const found = extractShareUrls(text, this.owner.settings.maxBatchSize).urls;
+    const known = new Set(extractShareUrls(this.inputText, 10).urls);
+    const fresh = found.filter((url) => !known.has(url));
+    if (!fresh.length) return;
+    const chip = holder.createEl("button", { cls: "ei-clip-chip", text: `剪贴板里有 ${fresh.length} 条小红书链接 · 填入` });
+    chip.addEventListener("click", () => {
+      this.inputText = [this.inputText.trim(), text.trim()].filter(Boolean).join("\n");
+      textarea.value = this.inputText;
+      holder.empty();
+      textarea.focus();
+    });
   }
 
   /** Paste → Preview → Import, so it is always clear which step writes to the vault. */
@@ -155,6 +191,7 @@ export class EvidenceImportModal extends Modal {
   }
 
   private renderProgress(label: string, completed: number, total: number): void {
+    this.stage = "other";
     this.titleEl.setText("Evidence Inbox");
     this.contentEl.empty();
     this.renderSteps(this.progressStep);
@@ -171,6 +208,7 @@ export class EvidenceImportModal extends Modal {
   }
 
   private renderPreview(): void {
+    this.stage = "other";
     this.titleEl.setText("核对后再导入");
     const { contentEl } = this;
     contentEl.empty();
@@ -318,6 +356,7 @@ export class EvidenceImportModal extends Modal {
   }
 
   private renderResults(batch: BatchImportResult): void {
+    this.stage = "other";
     this.titleEl.setText("导入结果");
     const { contentEl } = this;
     contentEl.empty();

@@ -24,4 +24,9 @@ describe("vault paths", () => {
     expect(mediaExtension("", "https://x/a.JPEG")).toBe("jpg");
     expect(mediaExtension("text/html", "https://x/a.exe")).toBe("jpg");
   });
+
+  it("also refuses a custom config folder", () => {
+    expect(normalizeVaultFolder(".config-vault/x", "fallback", ".config-vault")).toBe("fallback");
+    expect(normalizeVaultFolder("notes/x", "fallback", ".config-vault")).toBe("notes/x");
+  });
 });

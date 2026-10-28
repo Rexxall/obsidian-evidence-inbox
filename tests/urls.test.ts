@@ -15,6 +15,27 @@ describe("share URL parsing", () => {
     ]);
   });
 
+  it("accepts RedNote domains, xhs.cn short links, and notes opened from profile or search pages", () => {
+    const parsed = extractShareUrls([
+      "https://www.rednote.com/explore/67abc1230000000012345671?xsec_token=t",
+      "http://xhs.cn/AbCdEf12",
+      "https://www.xiaohongshu.com/user/profile/5a1b2c3d4e5f/67abc1230000000012345672?xsec_token=t",
+      "https://www.xiaohongshu.com/search_result/67abc1230000000012345673"
+    ].join("\n"));
+    expect(parsed.rejected).toEqual([]);
+    expect(parsed.urls).toEqual([
+      "https://www.rednote.com/explore/67abc1230000000012345671?xsec_token=t",
+      "https://xhs.cn/AbCdEf12",
+      "https://www.xiaohongshu.com/explore/67abc1230000000012345672?xsec_token=t",
+      "https://www.xiaohongshu.com/explore/67abc1230000000012345673"
+    ]);
+  });
+
+  it("does not rewrite profile pages that are not a note", () => {
+    const parsed = extractShareUrls("https://www.xiaohongshu.com/user/profile/5a1b2c3d4e5f");
+    expect(parsed.urls).toEqual([]);
+  });
+
   it("upgrades http share links to https", () => {
     const parsed = extractShareUrls("复制本条信息 http://xhslink.com/a/oldCode456，打开【小红书】App查看");
     expect(parsed.urls).toEqual(["https://xhslink.com/a/oldCode456"]);

@@ -6,7 +6,7 @@
 
 把“收藏了一条小红书”变成可核验、可连接、可行动的知识入口。
 
-[Features](#features) · [Install](#install) · [Privacy and safety](#privacy-and-safety) · [How it works](#how-it-works) · [中文说明](#中文说明) · [日本語](#日本語)
+[Features](#features) · [Install](#install) · [Network use](#network-use) · [Privacy and safety](#privacy-and-safety) · [How it works](#how-it-works) · [中文说明](#中文说明) · [日本語](#日本語)
 
 <img src="docs/screenshots/preview.jpg" width="860">
 
@@ -18,7 +18,9 @@ Bookmarks inside an app are easy to collect and hard to use: the post may disapp
 
 ## Features
 
-- **Paste 1–10 share texts or links** (`xhslink` short links, `/explore/…`, `/discovery/item/…`). Nothing is written until you have previewed them.
+- **Paste 1–10 share texts or links**: `xhslink` and `xhs.cn` short links, `xiaohongshu.com` or `rednote.com` note pages (`/explore/…`, `/discovery/item/…`, and notes opened from a profile or search page). Nothing is written until you have previewed them.
+- **Clipboard offer.** When the import window opens and the clipboard holds supported links, a chip offers to add them. It never fills anything on its own.
+- **Open from elsewhere.** `obsidian://evidence-inbox?url=<encoded link>` opens the import window with the link filled in, for Shortcuts, Raycast or a browser bookmarklet. Nothing is fetched until you press Preview.
 - **Preview** title, author, excerpt, number of images, whether you already have it, and where it will be saved.
 - **Save** each post as Markdown with YAML properties and, optionally, local copies of its images.
 - **Knowledge cards:** raw archive only, research evidence (question, method, sample, conclusion, limits, evidence level), a Japan action card (Japanese name, place, price, booking, deadline, checked or not), or a creator insight card.
@@ -37,10 +39,22 @@ Bookmarks inside an app are easy to collect and hard to use: the post may disapp
 
 ## Install
 
-1. Download `obsidian-evidence-inbox-0.1.0.zip` from the latest release.
-2. Unzip into `<your vault>/.obsidian/plugins/evidence-inbox/`.
+1. Download `main.js`, `manifest.json` and `styles.css` (or the zip) from the latest release.
+2. Put them into `<your vault>/.obsidian/plugins/evidence-inbox/`.
 3. **Settings → Community plugins**, reload, enable **Evidence Inbox**. Requires Obsidian desktop 1.11.4 or later.
 4. Click the inbox icon in the ribbon, or run **导入小红书公开链接**.
+
+## Network use
+
+Evidence Inbox only goes online when you press **Preview** or **Import**, and only to these places:
+
+| Service | Why |
+| --- | --- |
+| `xiaohongshu.com`, `rednote.com`, `xhslink.com`, `xhslink.cn`, `xhs.cn` | Read the public page of each link you pasted, and follow its short-link redirect. Pages are read one at a time, about a second apart. |
+| `*.xhscdn.com` | Download the post's images, only if you keep **Save images locally** on. |
+| The AI endpoint you configure | Only if you turn AI on and pick an AI card. Off by default; no endpoint is contacted until you set one. |
+
+There is no telemetry, no account, no payment and no background sync. Nothing is read from outside your vault.
 
 ## Privacy and safety
 
@@ -51,6 +65,8 @@ Bookmarks inside an app are easy to collect and hard to use: the post may disapp
 - **AI** receives only the selected note's title, author, tags, text and your goal, never images or other notes. The key is kept in Obsidian's SecretStorage, not in `data.json`.
 
 Only archive content you are entitled to keep, and keep the source link.
+
+**Platform terms.** This is an unofficial tool, not affiliated with Xiaohongshu. Xiaohongshu's user agreement restricts copying and automated collection of platform content without its permission. Evidence Inbox is built for a person keeping their own reading notes: it handles only links you paste yourself, at most ten at a time, never logs in and never works around access limits. Whether a given use is allowed is up to you and the platform's terms; do not use it to collect content in bulk or for commercial reuse.
 
 ## How it works
 
@@ -64,6 +80,15 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/PRD.md](docs/PRD.md).
 
 ## Changelog
 
+**0.3.0**
+
+- More links accepted: `rednote.com` note pages, `xhs.cn` short links, and notes opened from a profile or search page (rewritten to the `/explore/<id>` form).
+- Clipboard offer in the import window, and an `obsidian://evidence-inbox?url=` link to open it from Shortcuts, Raycast or a bookmarklet.
+- Public pages are now read one at a time, about a second apart, instead of three at once.
+- Settings regrouped under native headings (Saved to, Appearance, Open from elsewhere, Optional AI); folder checks also refuse a custom config folder.
+- README lists every remote service the plugin contacts, and the platform-terms note.
+- Code passes the official `eslint-plugin-obsidianmd` checks with no errors.
+
 **0.2.0**
 
 - Import window redesigned: three steps (paste, preview, import), one row per link with its status, and the reason when a link is left out. The card type is a one-click choice.
@@ -75,7 +100,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/PRD.md](docs/PRD.md).
 
 ## Status
 
-`0.2.0 alpha`. 55 automated tests pass, using synthetic page fixtures. The 30-sample check on real public posts described in [docs/TEST_SAMPLES.md](docs/TEST_SAMPLES.md) has not been run yet, so real-world success rates are not claimed. Mobile is untested.
+`0.3.0 beta`. 59 automated tests and the official Obsidian ESLint rules pass, using synthetic page fixtures. The 30-sample check on real public posts described in [docs/TEST_SAMPLES.md](docs/TEST_SAMPLES.md) has not been run yet, so real-world success rates are not claimed. Mobile is untested.
 
 ## License
 
@@ -87,7 +112,10 @@ MIT
 
 ## 现在能做什么
 
-- 接受分享文本、`xhslink.cn` / `xhslink.com` 短链接，以及 `/explore/<id>`、`/discovery/item/<id>` 公开笔记链接；
+- 接受分享文本、`xhslink.cn` / `xhslink.com` / `xhs.cn` 短链接，`xiaohongshu.com` 与 `rednote.com` 的 `/explore/<id>`、`/discovery/item/<id>` 公开笔记链接，以及从主页、搜索页点开的笔记链接（自动改写为 `/explore/<id>`）；
+- 打开导入窗口时，如果剪贴板里有受支持的链接，会出现“填入”提示，不会自动填；
+- `obsidian://evidence-inbox?url=<编码后的链接>` 可从快捷指令、Raycast、浏览器书签唤起导入窗口并填好链接，仍需点“预览”才联网；
+- 页面逐条读取，每条之间停约一秒；
 - 一次预览和导入 1–10 条，预览阶段不写 Vault；
 - 显示标题、作者、正文摘要、图片数量、重复状态和目标路径；
 - 保存 Markdown + YAML，并可把公开图片本地化；
@@ -107,6 +135,8 @@ MIT
 - v0.1 不下载视频，不做图片 OCR 或视频转写。
 
 请只归档你主动提交、公开可见且有权保存的内容，并保留原始来源链接。
+
+**平台条款：** 本插件是非官方工具，与小红书无关联。《小红书用户服务协议》（2026-03-23 版）限制未经许可复制、读取平台内容和以抓取等方式获取内容。插件只为个人整理阅读笔记而设计：只处理你亲手粘贴的链接、每批最多 10 条、不登录、不绕过任何访问限制。具体用途是否被允许由你自己对照平台条款判断；请勿用于批量采集或商业再利用。
 
 ## 安装
 
@@ -210,6 +240,7 @@ AI 输出始终标为“待核验”。它不是事实核验，也不会把平�
 
 ```bash
 pnpm run typecheck
+pnpm run lint    # 官方 eslint-plugin-obsidianmd
 pnpm test
 pnpm run build
 ```
@@ -251,5 +282,6 @@ pnpm run build
 - 1〜10 件をまとめて貼り、保存前にプレビューで確認します。
 - 同じ投稿を何度取り込んでも 1 つのノートのままで、自分で書いたカードやメモは上書きしません。
 - 研究の根拠カード、日本での行動カード（名前・場所・料金・予約・締切・確認済みか）などのテンプレートつき。
-- 通信は小紅書の HTTPS だけに限り、リダイレクトのたびに宛先を確認し、内部ネットワークへの接続を拒否します。
+- 通信は、貼ったリンクの小紅書ページ（1 件ずつ、約 1 秒おき）、画像、任意で設定した AI だけです。小紅書の HTTPS だけに限り、リダイレクトのたびに宛先を確認し、内部ネットワークへの接続を拒否します。
 - AI は任意で、初期設定ではオフです。
+- 小紅書とは無関係の非公式ツールです。小紅書の利用規約はコンテンツの無断複製や自動収集を制限しています。自分で貼ったリンクを個人のメモとして残す用途に限り、大量収集や商用には使わないでください。

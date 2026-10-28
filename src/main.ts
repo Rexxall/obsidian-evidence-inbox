@@ -38,6 +38,11 @@ export default class EvidenceInboxPlugin extends Plugin {
       name: "打开快速开始说明",
       callback: () => this.openOnboarding()
     });
+    // obsidian://evidence-inbox?url=… opens the import window with the link filled in; nothing is fetched until Preview.
+    this.registerObsidianProtocolHandler("evidence-inbox", (params) => {
+      const text = [params.url, params.text].filter((value): value is string => typeof value === "string" && value.length > 0).join("\n");
+      this.openImportModal(text);
+    });
     if (!this.settings.hasSeenOnboarding && typeof window !== "undefined") {
       const timeout = window.setTimeout(() => this.openOnboarding(), 700);
       this.register(() => window.clearTimeout(timeout));
@@ -53,12 +58,13 @@ export default class EvidenceInboxPlugin extends Plugin {
     this.importModal = null;
   }
 
-  openImportModal(): void {
+  openImportModal(initialText = ""): void {
     if (this.importModal) {
+      if (initialText && this.importModal.appendInput(initialText)) return;
       new Notice("已有一个 Evidence Inbox 导入窗口，请先完成当前操作。");
       return;
     }
-    this.importModal = new EvidenceImportModal(this.app, this);
+    this.importModal = new EvidenceImportModal(this.app, this, initialText);
     this.importModal.open();
   }
 

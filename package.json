@@ -1,6 +1,6 @@
 {
   "name": "obsidian-evidence-inbox",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Turn user-submitted Xiaohongshu share links into source-backed, actionable Obsidian notes.",
   "main": "main.js",
   "type": "module",
@@ -10,7 +10,8 @@
     "dev": "node esbuild.config.mjs",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "check": "pnpm run typecheck && pnpm run test && pnpm run build"
+    "lint": "eslint src",
+    "check": "pnpm run typecheck && pnpm run lint && pnpm run test && pnpm run build"
   },
   "keywords": [
     "obsidian",
@@ -27,8 +28,11 @@
     "@types/node": "^22.10.0",
     "builtin-modules": "^4.0.0",
     "esbuild": "^0.28.0",
+    "eslint": "^9.39.5",
+    "eslint-plugin-obsidianmd": "0.4.2",
     "obsidian": "^1.11.4",
     "typescript": "^5.7.2",
+    "typescript-eslint": "^8.72.1",
     "vitest": "^4.1.7"
   },
   "author": "Rexxall"

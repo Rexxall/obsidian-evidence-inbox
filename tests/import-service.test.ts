@@ -114,6 +114,25 @@ class FakeHttp implements HttpGateway {
   }
 }
 
+EvidenceImportService.pageGapMs = 0;
+
+class CountingPageHttp extends FakeHttp {
+  inFlight = 0;
+  maxInFlight = 0;
+  override async getText(url = ""): Promise<HttpTextResponse> {
+    this.inFlight += 1;
+    this.maxInFlight = Math.max(this.maxInFlight, this.inFlight);
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    this.inFlight -= 1;
+    const id = url.match(/[0-9a-f]{24}/)?.[0] ?? "67abc1230000000066666666";
+    return {
+      status: 200,
+      headers: { "content-type": "text/html" },
+      text: `<script>window.__INITIAL_STATE__={"note":{"noteDetailMap":{"${id}":{"note":{"id":"${id}","title":"标题 ${id.slice(-2)}","desc":"正文","user":{"nickname":"作者"}}}}}};</script>`
+    };
+  }
+}
+
 class SameNoteHttp extends FakeHttp {
   override async getText(): Promise<HttpTextResponse> {
     const id = "67abc1230000000066666666";
@@ -150,6 +169,18 @@ function preview(value: EvidenceSource): PreviewSuccess {
     plannedPath: `Evidence Inbox/小红书/${value.sourceId}.md`
   };
 }
+
+describe("page requests", () => {
+  it("reads public pages one at a time", async () => {
+    const { app } = fakeApp();
+    const http = new CountingPageHttp();
+    const service = new EvidenceImportService(app, normalizeSettings({}), http);
+    const urls = ["01", "02", "03", "04"].map((tail) => `https://www.xiaohongshu.com/explore/67abc12300000000123456${tail}`);
+    const previews = await service.preview(urls);
+    expect(previews.every((item) => item.kind === "success")).toBe(true);
+    expect(http.maxInFlight).toBe(1);
+  });
+});
 
 describe("batch import transaction", () => {
   it("is idempotent across three imports and preserves user notes", async () => {

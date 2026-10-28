@@ -8,8 +8,7 @@ export class EvidenceInboxOnboardingModal extends Modal {
 
   onOpen(): void {
     this.titleEl.setText("Evidence Inbox：从来源到行动");
-    this.modalEl.addClass("evidence-inbox-modal");
-    this.modalEl.toggleClass("rk-paper", this.owner.settings.paperStyle);
+    this.modalEl.addClass("evidence-inbox-modal", "ap", "ap-modal");
     const { contentEl } = this;
     contentEl.empty();
     contentEl.createEl("p", {
@@ -22,7 +21,7 @@ export class EvidenceInboxOnboardingModal extends Modal {
     list.createEl("li", { text: "确认导入；某一条失败不会中断其余项目。" });
     list.createEl("li", { text: "长任务可点“取消”；已完成的条目保留，尚未开始的条目停止。" });
     contentEl.createEl("p", {
-      cls: "rk-callout is-warn",
+      cls: "ap-notice",
       text: "边界：不登录账号，不读取收藏/点赞，不处理验证码，不绕过平台限制。只归档你主动提交且有权保存的内容。"
     });
     new Setting(contentEl)

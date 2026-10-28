@@ -8,7 +8,10 @@
 
 [Features](#features) · [Install](#install) · [Network use](#network-use) · [Privacy and safety](#privacy-and-safety) · [How it works](#how-it-works) · [中文说明](#中文说明) · [日本語](#日本語)
 
-<img src="docs/screenshots/preview.jpg" width="860">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/preview-dark.jpg">
+  <img src="docs/screenshots/preview.jpg" width="860" alt="Import window: two posts ready to save and one link that could not be read">
+</picture>
 
 </div>
 
@@ -28,14 +31,11 @@ Bookmarks inside an app are easy to collect and hard to use: the post may disapp
 - **Honest failures.** Each link gets its own result (created, updated, partial, skipped, failed); one failure does not stop the batch, and a report is written for larger imports.
 - **Optional AI** with your own key and endpoint, off by default. Without it, everything except the AI draft still works.
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/note-dark.jpg">
-  <img src="docs/screenshots/note.jpg" width="860">
-</picture>
+**Looks at home on a Mac.** The import window is a translucent glass sheet over your note; lists and settings are solid grouped rows, like System Settings. It follows your theme, light or dark, and your accent colour. With *Reduce transparency* or *Increase contrast* turned on in macOS, the glass becomes solid; with *Reduce motion*, nothing animates.
 
-**纸墨风格 (Paper & ink style, optional).** Turn it on in settings for a paper-and-ink look. Off by default, so the windows follow your theme. Below: one new post and one already saved, previewed together.
+<img src="docs/screenshots/note.jpg" width="860" alt="A saved post in reading view, with the plugin-managed source part labelled">
 
-<img src="docs/screenshots/paper-preview.jpg" width="860">
+<img src="docs/screenshots/settings.jpg" width="860" alt="Settings as grouped rows: defaults, where notes are saved, opening from elsewhere, optional AI">
 
 ## Install
 
@@ -76,7 +76,7 @@ Only archive content you are entitled to keep, and keep the source link.
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/PRD.md](docs/PRD.md).
 
-`styles.css` is generated. Edit `styles/plugin.css` (or the shared `styles/kit.css`, the same in all of my plugins) and run `npm run styles`.
+`styles.css` is generated. Edit `styles/plugin.css` (or the shared `styles/apple-kit.css`, the same in all of my plugins) and run `pnpm run styles`.
 
 ## Changelog
 
@@ -88,6 +88,8 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/PRD.md](docs/PRD.md).
 - Settings regrouped under native headings (Saved to, Appearance, Open from elsewhere, Optional AI); folder checks also refuse a custom config folder.
 - README lists every remote service the plugin contacts, and the platform-terms note.
 - Code passes the official `eslint-plugin-obsidianmd` checks with no errors.
+- New look in the current Apple glass style: the import window is a glass sheet, lists and settings are grouped rows, round checks, capsule buttons and segmented controls. Follows your theme and accent colour, and turns solid with Reduce transparency or Increase contrast.
+- The optional paper & ink style from 0.2.0 is removed; the windows always follow your theme.
 
 **0.2.0**
 
@@ -116,6 +118,7 @@ MIT
 - 打开导入窗口时，如果剪贴板里有受支持的链接，会出现“填入”提示，不会自动填；
 - `obsidian://evidence-inbox?url=<编码后的链接>` 可从快捷指令、Raycast、浏览器书签唤起导入窗口并填好链接，仍需点“预览”才联网；
 - 页面逐条读取，每条之间停约一秒；
+- 界面是苹果的玻璃风格：导入窗口是半透明玻璃，列表和设置是分组行；跟随主题和强调色，系统开了“降低透明度”“增强对比度”时自动变实底；
 - 一次预览和导入 1–10 条，预览阶段不写 Vault；
 - 显示标题、作者、正文摘要、图片数量、重复状态和目标路径；
 - 保存 Markdown + YAML，并可把公开图片本地化；

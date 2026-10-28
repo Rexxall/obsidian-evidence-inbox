@@ -20,7 +20,7 @@ const OUTCOME_TONES: Record<ImportResult["outcome"], string> = {
   updated: "is-accent",
   partial: "is-warn",
   skipped: "",
-  failed: "is-danger"
+  failed: "is-bad"
 };
 
 export class EvidenceImportModal extends Modal {
@@ -46,8 +46,7 @@ export class EvidenceImportModal extends Modal {
 
   onOpen(): void {
     this.disposed = false;
-    this.modalEl.addClass("evidence-inbox-modal");
-    this.modalEl.toggleClass("rk-paper", this.owner.settings.paperStyle);
+    this.modalEl.addClass("evidence-inbox-modal", "ap", "ap-modal");
     this.renderInput();
   }
 
@@ -142,8 +141,8 @@ export class EvidenceImportModal extends Modal {
   }
 
   private renderFoot(note: string): HTMLElement {
-    const foot = this.contentEl.createDiv({ cls: "rk-modal-foot" });
-    foot.createDiv({ cls: "rk-foot-note", text: note });
+    const foot = this.contentEl.createDiv({ cls: "ei-foot" });
+    foot.createDiv({ cls: "ei-foot-note", text: note });
     return foot;
   }
 
@@ -195,11 +194,11 @@ export class EvidenceImportModal extends Modal {
     this.titleEl.setText("Evidence Inbox");
     this.contentEl.empty();
     this.renderSteps(this.progressStep);
-    const card = this.contentEl.createDiv({ cls: "rk-card is-flat ei-progress" });
+    const card = this.contentEl.createDiv({ cls: "ap-card is-inset ei-progress" });
     card.createDiv({ cls: "ei-progress-label", text: label });
-    const meter = card.createDiv({ cls: "rk-meter" });
-    meter.createDiv({ cls: "rk-meter-fill" }).style.setProperty("--rk-fill", `${total ? Math.min(completed / total, 1) * 100 : 0}%`);
-    card.createDiv({ cls: "rk-split", text: `${completed} / ${total}` });
+    const meter = card.createDiv({ cls: "ap-meter" });
+    meter.createEl("i").style.setProperty("--ap-value", `${total ? Math.min(completed / total, 1) * 100 : 0}%`);
+    card.createDiv({ cls: "ei-count", text: `${completed} / ${total}` });
     if (this.controller && !this.controller.signal.aborted) {
       const foot = this.renderFoot("已完成的条目会保留，尚未开始的条目停止。");
       const cancel = foot.createEl("button", { text: "取消" });
@@ -226,7 +225,7 @@ export class EvidenceImportModal extends Modal {
     summary.appendText(" 条 · 无法预览 ");
     summary.createEl("strong", { text: String(failures) });
     summary.appendText(" 条");
-    summary.createSpan({ cls: "rk-muted", text: "　预览阶段不会写入 Vault" });
+    summary.createSpan({ cls: "ei-muted", text: "　预览阶段不会写入 Vault" });
 
     const list = contentEl.createDiv({ cls: "evidence-inbox-preview-list" });
     this.previews.forEach((item, index) => this.renderPreviewItem(list, item, index));
@@ -234,7 +233,7 @@ export class EvidenceImportModal extends Modal {
     const options = contentEl.createDiv({ cls: "ei-options" });
     const templateRow = options.createDiv({ cls: "ei-option-row" });
     templateRow.createSpan({ cls: "ei-option-name", text: "知识卡" });
-    const seg = templateRow.createDiv({ cls: "rk-seg" });
+    const seg = templateRow.createDiv({ cls: "ap-seg" });
     for (const template of KNOWLEDGE_TEMPLATES) {
       const button = seg.createEl("button", {
         text: template.label,
@@ -286,7 +285,7 @@ export class EvidenceImportModal extends Modal {
       meta.createDiv({ cls: "ei-sub", text: item.reason });
       meta.createDiv({ cls: "ei-sub", text: item.recovery });
       meta.createEl("code", { text: item.displayUrl });
-      row.createSpan({ cls: "rk-chip is-danger", text: "无法预览" });
+      row.createSpan({ cls: "ap-pill is-bad", text: "无法预览" });
       return;
     }
     const blocked = Boolean(item.batchDuplicate || item.duplicatePath && item.duplicateManaged === false);
@@ -313,10 +312,10 @@ export class EvidenceImportModal extends Modal {
     } else if (item.duplicatePath && !item.batchDuplicate) {
       meta.createDiv({ cls: "ei-sub", text: "该同源文件没有 Evidence Inbox 管理标记，本次不会下载图片、调用 AI 或修改文件。" });
     }
-    if (item.batchDuplicate) row.createSpan({ cls: "rk-chip", text: "批内重复，已排除" });
-    else if (item.duplicatePath && item.duplicateManaged) row.createSpan({ cls: "rk-chip is-accent", text: "将安全更新" });
-    else if (item.duplicatePath) row.createSpan({ cls: "rk-chip is-warn", text: "同源冲突，已保护" });
-    else row.createSpan({ cls: "rk-chip is-good", text: "新建" });
+    if (item.batchDuplicate) row.createSpan({ cls: "ap-pill", text: "批内重复，已排除" });
+    else if (item.duplicatePath && item.duplicateManaged) row.createSpan({ cls: "ap-pill is-accent", text: "将安全更新" });
+    else if (item.duplicatePath) row.createSpan({ cls: "ap-pill is-warn", text: "同源冲突，已保护" });
+    else row.createSpan({ cls: "ap-pill is-good", text: "新建" });
   }
 
   private async runImport(): Promise<void> {
@@ -365,7 +364,7 @@ export class EvidenceImportModal extends Modal {
     batch.results.forEach((result) => summary.set(result.outcome, (summary.get(result.outcome) ?? 0) + 1));
     const chips = contentEl.createDiv({ cls: "ei-summary" });
     for (const [outcome, count] of summary) {
-      chips.createSpan({ cls: `rk-chip ${OUTCOME_TONES[outcome]}`.trim(), text: `${OUTCOME_LABELS[outcome]} ${count}` });
+      chips.createSpan({ cls: `ap-pill ${OUTCOME_TONES[outcome]}`.trim(), text: `${OUTCOME_LABELS[outcome]} ${count}` });
     }
     const list = contentEl.createDiv({ cls: "evidence-inbox-results" });
     for (const result of batch.results) {
@@ -375,7 +374,7 @@ export class EvidenceImportModal extends Modal {
       if (result.displayUrl.startsWith("http")) meta.createEl("code", { text: result.displayUrl });
       if (result.reason) meta.createDiv({ cls: "ei-sub", text: result.reason });
       if (result.warnings.length) meta.createDiv({ cls: "ei-sub", text: result.warnings.join("；") });
-      row.createSpan({ cls: `rk-chip ${OUTCOME_TONES[result.outcome]}`.trim(), text: OUTCOME_LABELS[result.outcome] });
+      row.createSpan({ cls: `ap-pill ${OUTCOME_TONES[result.outcome]}`.trim(), text: OUTCOME_LABELS[result.outcome] });
       if (result.path) {
         const open = row.createEl("button", { text: "打开笔记" });
         open.addEventListener("click", () => void this.openPath(result.path!));

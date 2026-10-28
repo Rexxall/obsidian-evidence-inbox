@@ -12,9 +12,9 @@ export class EvidenceInboxSettingTab extends PluginSettingTab {
   display(): void {
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.addClass("evidence-inbox-settings");
+    containerEl.addClass("evidence-inbox-settings", "ap", "ap-settings");
     containerEl.createEl("p", {
-      cls: "ei-settings-intro",
+      cls: "ap-section-note ei-settings-intro",
       text: "只处理你主动粘贴、且你有权归档的公开分享链接。插件不登录账号，也不读取收藏或点赞列表；只在你点“预览”或“导入”时联网。"
     });
 
@@ -60,18 +60,6 @@ export class EvidenceInboxSettingTab extends PluginSettingTab {
       `库内相对路径；不能用 ..，也不能放进配置目录 ${this.app.vault.configDir}。`);
     this.addFolderSetting("图片", "mediaFolder", "Evidence Inbox/Assets", "按来源 ID 命名，重复导入不会多存一份。");
     this.addFolderSetting("报告", "reportFolder", "Evidence Inbox/Reports", "一次导入多条，或有条目未完整导入时，写一份逐条报告。");
-
-    new Setting(containerEl).setName("外观").setHeading();
-    new Setting(containerEl)
-      .setName("纸墨风格")
-      .setDesc("纸色底、细墨线、衬线数字，强调色用暗红和青绿。关闭时跟随 Obsidian 主题。")
-      .addToggle((toggle) => toggle
-        .setValue(this.owner.settings.paperStyle)
-        .onChange(async (value) => {
-          this.owner.settings.paperStyle = value;
-          await this.owner.saveSettings();
-          this.owner.applyPaperStyle();
-        }));
 
     new Setting(containerEl).setName("从别处打开").setHeading();
     const link = "obsidian://evidence-inbox?url=";

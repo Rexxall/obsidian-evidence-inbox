@@ -25,8 +25,6 @@ export default class EvidenceInboxPlugin extends Plugin {
     if (hadLegacyKeyField || sanitizedAiEndpoint) await this.saveSettings();
     this.addSettingTab(new EvidenceInboxSettingTab(this.app, this));
     this.registerMarkdownPostProcessor((element, context) => decorateNoteZones(element, context));
-    this.applyPaperStyle();
-    this.register(() => document.body.removeClass("evidence-inbox-paper"));
     this.addRibbonIcon("inbox", "导入到 Evidence Inbox", () => this.openImportModal());
     this.addCommand({
       id: "import-xhs-links",
@@ -70,11 +68,6 @@ export default class EvidenceInboxPlugin extends Plugin {
 
   releaseImportModal(modal: EvidenceImportModal): void {
     if (this.importModal === modal) this.importModal = null;
-  }
-
-  /** Note zones live outside the plugin's own windows, so the paper style is switched on the body. */
-  applyPaperStyle(): void {
-    document.body.toggleClass("evidence-inbox-paper", this.settings.paperStyle);
   }
 
   openOnboarding(): void {

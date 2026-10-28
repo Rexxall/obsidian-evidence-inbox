@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mediaExtension, normalizeVaultFolder, stableNoteFilename } from "../src/core/paths";
+import { folderOf, mediaExtension, normalizeVaultFolder, stableNoteFilename } from "../src/core/paths";
 
 describe("vault paths", () => {
   it("rejects traversal and Obsidian configuration destinations", () => {
@@ -28,5 +28,11 @@ describe("vault paths", () => {
   it("also refuses a custom config folder", () => {
     expect(normalizeVaultFolder(".config-vault/x", "fallback", ".config-vault")).toBe("fallback");
     expect(normalizeVaultFolder("notes/x", "fallback", ".config-vault")).toBe("notes/x");
+  });
+
+  it("names the destination folder in a few words", () => {
+    expect(folderOf("Evidence Inbox/小红书/2026-10 某条笔记.md")).toBe("小红书/");
+    expect(folderOf("a/b/c/d.md")).toBe("c/");
+    expect(folderOf("note.md")).toBe("库根目录");
   });
 });

@@ -66,3 +66,10 @@ export function mediaExtension(contentType: string, remoteUrl: string): string {
   }
   return "jpg";
 }
+
+/** "Evidence Inbox/小红书/某条.md" → "小红书/": the last folder only, so the line stays short. */
+export function folderOf(path: string): string {
+  const parts = path.split("/").slice(0, -1);
+  if (!parts.length) return "库根目录";
+  return `${parts[parts.length - 1]}/`;
+}

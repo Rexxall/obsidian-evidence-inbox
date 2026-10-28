@@ -22,7 +22,7 @@ export class EvidenceInboxOnboardingModal extends Modal {
     list.createEl("li", { text: "长任务可点“取消”；已完成的条目保留，尚未开始的条目停止。" });
     contentEl.createEl("p", {
       cls: "ap-notice",
-      text: "边界：不登录账号，不读取收藏/点赞，不处理验证码，不绕过平台限制。只归档你主动提交且有权保存的内容。"
+      text: "边界：只在你点“预览”或“导入”时联网。不登录账号，不读取收藏/点赞，不处理验证码，不绕过平台限制。只归档你主动提交且有权保存的内容。"
     });
     new Setting(contentEl)
       .addButton((button) => button.setButtonText("稍后再说").onClick(() => this.close()))

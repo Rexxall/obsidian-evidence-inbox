@@ -196,12 +196,10 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.evidence-inbox-modal .ei-meta code {
-  display: block;
+/* Where a note goes: one short grey line, the full path in the tooltip */
+.evidence-inbox-modal .ei-path {
   overflow: hidden;
-  padding: 0;
-  background: none;
-  font-size: var(--font-ui-smaller);
+  font: var(--ap-subhead);
   color: var(--ap-label-3);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -214,20 +212,12 @@
   box-shadow: var(--ap-hair);
   overflow: hidden;
 }
-.evidence-inbox-modal .ei-option-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--ap-s3);
-  padding: var(--ap-s3) var(--ap-s4);
-}
-.evidence-inbox-modal .ei-option-name { min-width: 4em; font: var(--ap-body); }
 .modal.evidence-inbox-modal .ei-options .setting-item {
   position: relative;
   padding: var(--ap-s3) var(--ap-s4);
   border: 0;
 }
-.evidence-inbox-modal .ei-options .setting-item::before {
+.evidence-inbox-modal .ei-options .setting-item + .setting-item::before {
   content: "";
   position: absolute;
   top: 0;

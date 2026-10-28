@@ -6,6 +6,8 @@ import { extractShareUrls } from "../core/urls";
 import { aiIsConfigured } from "../settings";
 import { sanitizeDiagnostic } from "../core/security";
 import { EvidenceImportService, type BatchImportResult } from "../import/import-service";
+import { createObsidianPicker } from "./obsidian-picker";
+import { folderOf } from "../core/paths";
 
 const OUTCOME_LABELS: Record<ImportResult["outcome"], string> = {
   created: "已新建",
@@ -231,21 +233,22 @@ export class EvidenceImportModal extends Modal {
     this.previews.forEach((item, index) => this.renderPreviewItem(list, item, index));
 
     const options = contentEl.createDiv({ cls: "ei-options" });
-    const templateRow = options.createDiv({ cls: "ei-option-row" });
-    templateRow.createSpan({ cls: "ei-option-name", text: "知识卡" });
-    const seg = templateRow.createDiv({ cls: "ap-seg" });
-    for (const template of KNOWLEDGE_TEMPLATES) {
-      const button = seg.createEl("button", {
-        text: template.label,
-        cls: template.id === this.template ? "is-active" : "",
-        attr: { "aria-pressed": String(template.id === this.template), title: template.description }
-      });
-      button.addEventListener("click", () => {
-        this.template = template.id;
+    const chosen = KNOWLEDGE_TEMPLATES.find((template) => template.id === this.template);
+    const templateSetting = new Setting(options)
+      .setName("知识卡")
+      .setDesc(chosen?.description ?? "");
+    createObsidianPicker(
+      this.app,
+      templateSetting.controlEl,
+      KNOWLEDGE_TEMPLATES.map((template) => ({ value: template.id, label: template.label, desc: template.description })),
+      this.template,
+      (value: KnowledgeTemplateId) => {
+        this.template = value;
         if (this.template === "raw") this.generateWithAi = false;
         this.renderPreview();
-      });
-    }
+      },
+      "知识卡"
+    );
 
     new Setting(options)
       .setName("本地化图片")
@@ -284,7 +287,7 @@ export class EvidenceImportModal extends Modal {
       meta.createDiv({ cls: "ei-title", text: "无法预览" });
       meta.createDiv({ cls: "ei-sub", text: item.reason });
       meta.createDiv({ cls: "ei-sub", text: item.recovery });
-      meta.createEl("code", { text: item.displayUrl });
+      meta.createDiv({ cls: "ei-path", text: item.displayUrl, attr: { title: item.displayUrl } });
       row.createSpan({ cls: "ap-pill is-bad", text: "无法预览" });
       return;
     }
@@ -306,7 +309,8 @@ export class EvidenceImportModal extends Modal {
     meta.createDiv({ cls: "ei-sub", text: `${item.source.author} · ${item.source.images.length} 张图片 · ${item.source.sourceKind}` });
     const excerpt = item.source.body.slice(0, 180);
     meta.createDiv({ cls: "ei-excerpt", text: excerpt || "未提取到正文" });
-    meta.createEl("code", { text: item.plannedPath });
+    // Where it goes, in a few words; the full path is in the tooltip.
+    meta.createDiv({ cls: "ei-path", text: `存到 ${folderOf(item.plannedPath)}`, attr: { title: item.plannedPath } });
     if (item.duplicatePath && item.duplicateManaged) {
       meta.createDiv({ cls: "ei-sub", text: "只刷新来源区；现有知识卡、“我的笔记”和其他用户内容保持原样。知识卡与 AI 选项只对新笔记生效。" });
     } else if (item.duplicatePath && !item.batchDuplicate) {
@@ -371,7 +375,8 @@ export class EvidenceImportModal extends Modal {
       const row = list.createDiv({ cls: `ei-item is-${result.outcome}` });
       const meta = row.createDiv({ cls: "ei-meta" });
       meta.createDiv({ cls: "ei-title", text: result.title });
-      if (result.displayUrl.startsWith("http")) meta.createEl("code", { text: result.displayUrl });
+      if (result.path) meta.createDiv({ cls: "ei-path", text: `存到 ${folderOf(result.path)}`, attr: { title: result.path } });
+      else if (result.displayUrl.startsWith("http")) meta.createDiv({ cls: "ei-path", text: result.displayUrl, attr: { title: result.displayUrl } });
       if (result.reason) meta.createDiv({ cls: "ei-sub", text: result.reason });
       if (result.warnings.length) meta.createDiv({ cls: "ei-sub", text: result.warnings.join("；") });
       row.createSpan({ cls: `ap-pill ${OUTCOME_TONES[result.outcome]}`.trim(), text: OUTCOME_LABELS[result.outcome] });
@@ -413,3 +418,4 @@ export class EvidenceImportModal extends Modal {
     if (file instanceof TFile) await this.app.workspace.getLeaf(true).openFile(file);
   }
 }
+

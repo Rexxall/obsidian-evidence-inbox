@@ -35,7 +35,12 @@ Bookmarks inside an app are easy to collect and hard to use: the post may disapp
 
 <img src="docs/screenshots/note.jpg" width="860" alt="A saved post in reading view, with the plugin-managed source part labelled">
 
-<img src="docs/screenshots/settings.jpg" width="860" alt="Settings as grouped rows: defaults, where notes are saved, opening from elsewhere, optional AI">
+<img src="docs/screenshots/picker.jpg" width="860" alt="Choosing the knowledge card from a capsule menu; each saved post shows only the folder it goes to">
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/settings-dark.jpg">
+  <img src="docs/screenshots/settings.jpg" width="860" alt="Settings as grouped rows: defaults, where notes are saved, opening from elsewhere, optional AI">
+</picture>
 
 ## Install
 

@@ -3,6 +3,8 @@ import type EvidenceInboxPlugin from "../main";
 import { KNOWLEDGE_TEMPLATES } from "../core/knowledge-templates";
 import { normalizeVaultFolder } from "../core/paths";
 import { sanitizeAiBaseUrl } from "../settings";
+import type { KnowledgeTemplateId } from "../types";
+import { createObsidianPicker } from "./obsidian-picker";
 
 export class EvidenceInboxSettingTab extends PluginSettingTab {
   constructor(app: App, private readonly owner: EvidenceInboxPlugin) {
@@ -15,12 +17,12 @@ export class EvidenceInboxSettingTab extends PluginSettingTab {
     containerEl.addClass("evidence-inbox-settings", "ap", "ap-settings");
     containerEl.createEl("p", {
       cls: "ap-section-note ei-settings-intro",
-      text: "只处理你主动粘贴、且你有权归档的公开分享链接。插件不登录账号，也不读取收藏或点赞列表；只在你点“预览”或“导入”时联网。"
+      text: "只在你点“预览”或“导入”时联网，处理你主动粘贴的公开链接。"
     });
 
     new Setting(containerEl)
       .setName("快速开始")
-      .setDesc("重新打开可恢复的新手说明。")
+      .setDesc("使用步骤，以及插件不做什么。")
       .addButton((button) => button.setButtonText("打开说明").onClick(() => this.owner.openOnboarding()));
 
     new Setting(containerEl)
@@ -36,24 +38,32 @@ export class EvidenceInboxSettingTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName("默认知识卡")
       .setDesc("“仅原始归档”完全不调用 AI。")
-      .addDropdown((dropdown) => {
-        for (const template of KNOWLEDGE_TEMPLATES) dropdown.addOption(template.id, template.label);
-        dropdown.setValue(this.owner.settings.defaultTemplate).onChange(async (value) => {
-          this.owner.settings.defaultTemplate = value as typeof this.owner.settings.defaultTemplate;
+      .then((setting) => createObsidianPicker(
+        this.app,
+        setting.controlEl,
+        KNOWLEDGE_TEMPLATES.map((template) => ({ value: template.id, label: template.label, desc: template.description })),
+        this.owner.settings.defaultTemplate,
+        async (value: KnowledgeTemplateId) => {
+          this.owner.settings.defaultTemplate = value;
           await this.owner.saveSettings();
-        });
-      });
+        },
+        "默认知识卡"
+      ));
 
     new Setting(containerEl)
       .setName("单批最大链接数")
       .setDesc("最多 10 条。页面逐条读取，每条之间停约一秒，不对平台集中请求。")
-      .addDropdown((dropdown) => {
-        for (let value = 1; value <= 10; value += 1) dropdown.addOption(String(value), String(value));
-        dropdown.setValue(String(this.owner.settings.maxBatchSize)).onChange(async (value) => {
+      .then((setting) => createObsidianPicker(
+        this.app,
+        setting.controlEl,
+        Array.from({ length: 10 }, (_, index) => ({ value: String(index + 1), label: `${index + 1} 条` })),
+        String(this.owner.settings.maxBatchSize),
+        async (value) => {
           this.owner.settings.maxBatchSize = Number(value);
           await this.owner.saveSettings();
-        });
-      });
+        },
+        "单批最大链接数"
+      ));
 
     new Setting(containerEl).setName("保存位置").setHeading();
     this.addFolderSetting("笔记", "captureFolder", "Evidence Inbox/小红书",

@@ -69,11 +69,11 @@
   --ap-shadow-3: 0 28px 70px -14px rgb(0 0 0 / 0.30), 0 10px 24px rgb(0 0 0 / 0.10);
 
   /* Motion */
-  --ap-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ap-ease: cubic-bezier(0.16, 1, 0.3, 1);
   --ap-ease-spring: cubic-bezier(0.34, 1.36, 0.64, 1);
   --ap-ease-sheet: cubic-bezier(0.32, 0.72, 0, 1);
   --ap-fast: 120ms;
-  --ap-base: 220ms;
+  --ap-base: 200ms;
   --ap-slow: 340ms;
 
   font: var(--ap-body);
@@ -199,6 +199,8 @@
 .ap-btn.is-plain { background: none; color: var(--ap-accent); padding-inline: 6px; }
 .ap-btn.is-plain:hover { background: var(--ap-fill); }
 .ap-btn.is-danger { color: var(--ap-bad); }
+.ap-btn.is-outline { background: var(--ap-page); box-shadow: var(--ap-hair); }
+.ap-btn.is-outline:hover { background: var(--ap-group); }
 .ap-btn.is-large { font: 600 14px/20px var(--ap-font); padding: 10px 20px; }
 .ap-btn:disabled, .ap-btn[aria-disabled="true"] { opacity: 0.45; cursor: default; transform: none; }
 
@@ -228,7 +230,22 @@
 /* ---------- Card ---------- */
 .ap-card { background: var(--ap-page); border-radius: var(--ap-r-card); box-shadow: var(--ap-shadow-1); padding: var(--ap-s4); }
 .ap-card.is-inset { background: var(--ap-group); box-shadow: var(--ap-hair); }
+.ap-card.is-nest { background: var(--ap-group); box-shadow: var(--ap-hair); border-radius: calc(var(--ap-r-card) + 6px); padding: 6px; }
+.ap-card.is-nest > .ap-card { border-radius: var(--ap-r-card); }
 .ap-big { font: 600 34px/40px var(--ap-font-round); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.ap-unit { font: 500 12px/16px var(--ap-font); color: var(--ap-label-2); margin-left: 2px; }
+/* Card head: icon tile, title and one line under it, a status pill on the right */
+.ap-card-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--ap-s3); padding: var(--ap-s3) var(--ap-s4); }
+.ap-icon-tile { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: var(--ap-accent-tint); color: var(--ap-accent); }
+.ap-icon-tile svg { width: 18px; height: 18px; }
+.ap-card-title { font: var(--ap-headline); }
+.ap-card-sub { font: var(--ap-subhead); color: var(--ap-label-2); }
+/* A row of figures split by hairlines */
+.ap-stats { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
+.ap-stat { display: grid; gap: 4px; padding: var(--ap-s1) var(--ap-s4); min-width: 0; }
+.ap-stat + .ap-stat { box-shadow: inset 0.5px 0 0 var(--ap-sep); }
+.ap-stat-label { font: var(--ap-subhead); color: var(--ap-label-2); }
+.ap-stat-value { font: 600 22px/26px var(--ap-font-round); font-variant-numeric: tabular-nums; }
 .ap-eyebrow { font: var(--ap-caption); letter-spacing: 0.04em; color: var(--ap-label-2); }
 
 /* ---------- Sheet (modal): glass, centred title, actions bottom right ---------- */
@@ -274,6 +291,14 @@
   box-shadow: var(--ap-glass-edge), var(--ap-shadow-2);
 }
 
+/* ---------- Obsidian's translucent window ----------
+   With Appearance → Translucent window on, Obsidian adds .is-translucent to body and the
+   wallpaper shows through the app. Panel backgrounds then step back to a faint tint so it
+   can, while cards, lists and fields keep enough body for text. */
+.is-translucent .ap.ap-view { background: transparent; }
+.is-translucent .ap { --ap-group: color-mix(in srgb, var(--background-primary) 72%, transparent); }
+.is-translucent .ap .ap-card:not(.is-inset):not(.is-nest) { background: color-mix(in srgb, var(--background-primary) 88%, transparent); }
+
 /* ---------- Fallbacks ---------- */
 /* No backdrop-filter: glass becomes an almost opaque surface, so text stays readable */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
@@ -281,7 +306,7 @@
 }
 /* Reduce transparency: solid surfaces, a firmer edge */
 @media (prefers-reduced-transparency: reduce) {
-  .ap { --ap-glass: var(--ap-glass-solid); --ap-glass-thin: var(--ap-glass-solid); --ap-blur: none; --ap-blur-thin: none; --ap-glint: transparent; }
+  .ap, .is-translucent .ap { --ap-glass: var(--ap-glass-solid); --ap-glass-thin: var(--ap-glass-solid); --ap-blur: none; --ap-blur-thin: none; --ap-glint: transparent; --ap-group: color-mix(in srgb, var(--text-normal) 4%, var(--background-primary)); }
 }
 /* Increase contrast: solid surfaces and stronger lines */
 @media (prefers-contrast: more) {

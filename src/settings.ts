@@ -37,7 +37,7 @@ export function sanitizeAiBaseUrl(value: string): string {
   return endpoint?.href.replace(/\/$/, "") ?? "";
 }
 
-export function normalizeSettings(value: unknown): EvidenceInboxSettings {
+export function normalizeSettings(value: unknown, configDir?: string): EvidenceInboxSettings {
   const loaded = value !== null && typeof value === "object" ? value as Partial<EvidenceInboxSettings> : {};
   const stringValue = (candidate: unknown): string => typeof candidate === "string" ? candidate : "";
   const booleanValue = (candidate: unknown, fallback: boolean): boolean => typeof candidate === "boolean" ? candidate : fallback;
@@ -45,9 +45,9 @@ export function normalizeSettings(value: unknown): EvidenceInboxSettings {
     ? Math.max(1, Math.min(10, Math.floor(loaded.maxBatchSize!)))
     : DEFAULT_SETTINGS.maxBatchSize;
   return {
-    captureFolder: normalizeVaultFolder(stringValue(loaded.captureFolder), DEFAULT_SETTINGS.captureFolder),
-    mediaFolder: normalizeVaultFolder(stringValue(loaded.mediaFolder), DEFAULT_SETTINGS.mediaFolder),
-    reportFolder: normalizeVaultFolder(stringValue(loaded.reportFolder), DEFAULT_SETTINGS.reportFolder),
+    captureFolder: normalizeVaultFolder(stringValue(loaded.captureFolder), DEFAULT_SETTINGS.captureFolder, configDir),
+    mediaFolder: normalizeVaultFolder(stringValue(loaded.mediaFolder), DEFAULT_SETTINGS.mediaFolder, configDir),
+    reportFolder: normalizeVaultFolder(stringValue(loaded.reportFolder), DEFAULT_SETTINGS.reportFolder, configDir),
     localizeImagesByDefault: booleanValue(loaded.localizeImagesByDefault, DEFAULT_SETTINGS.localizeImagesByDefault),
     defaultTemplate: TEMPLATES.has(loaded.defaultTemplate as KnowledgeTemplateId)
       ? loaded.defaultTemplate as KnowledgeTemplateId

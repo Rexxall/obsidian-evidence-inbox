@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { App } from "obsidian";
+import { TFile, type App } from "obsidian";
 import { EvidenceImportService } from "../src/import/import-service";
 import { normalizeSettings } from "../src/settings";
 import type { EvidenceSource, PreviewFailure, PreviewSuccess } from "../src/types";
@@ -48,7 +48,7 @@ function fakeApp(cacheEnabled = true, blockedFolder = ""): {
     },
     create: async (path: string, content: string) => {
       if (textFiles.has(path)) throw new Error("already exists");
-      const file = { path, extension: path.split(".").pop() ?? "" };
+      const file = Object.assign(new TFile(), { path, extension: path.split(".").pop() ?? "" });
       textFiles.set(path, content);
       fileObjects.set(path, file);
       frontmatter.set(path, parseFrontmatter(content));
@@ -56,7 +56,7 @@ function fakeApp(cacheEnabled = true, blockedFolder = ""): {
     },
     createBinary: async (path: string, content: ArrayBuffer) => {
       binaryFiles.set(path, content);
-      const file = { path, extension: path.split(".").pop() ?? "" };
+      const file = Object.assign(new TFile(), { path, extension: path.split(".").pop() ?? "" });
       fileObjects.set(path, file);
       return file;
     },

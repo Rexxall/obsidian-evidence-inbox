@@ -13,16 +13,12 @@ export default class EvidenceInboxPlugin extends Plugin {
   private importModal: EvidenceImportModal | null = null;
 
   async onload(): Promise<void> {
-    const loaded = await this.loadData() as (Partial<EvidenceInboxSettings> & { aiApiKey?: unknown }) | null;
-    const hadLegacyKeyField = Boolean(loaded && "aiApiKey" in loaded);
-    const legacyKey = typeof loaded?.aiApiKey === "string" ? loaded.aiApiKey.trim() : "";
-    if (legacyKey) this.app.secretStorage.setSecret(EvidenceInboxPlugin.AI_SECRET_ID, legacyKey);
-    if (loaded && "aiApiKey" in loaded) delete loaded.aiApiKey;
-    this.settings = normalizeSettings(loaded);
+    const loaded = await this.loadData() as Partial<EvidenceInboxSettings> | null;
+    this.settings = normalizeSettings(loaded, this.app.vault.configDir);
     const sanitizedAiEndpoint = Boolean(
       loaded && typeof loaded.aiBaseUrl === "string" && loaded.aiBaseUrl !== this.settings.aiBaseUrl
     );
-    if (hadLegacyKeyField || sanitizedAiEndpoint) await this.saveSettings();
+    if (sanitizedAiEndpoint) await this.saveSettings();
     this.addSettingTab(new EvidenceInboxSettingTab(this.app, this));
     this.registerMarkdownPostProcessor((element, context) => decorateNoteZones(element, context));
     this.addRibbonIcon("inbox", "导入到 Evidence Inbox", () => this.openImportModal());

@@ -29,7 +29,7 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string,
   return new Promise<T>((resolve, reject) => {
     let settled = false;
     const cleanup = (): void => {
-      globalThis.clearTimeout(timer);
+      window.clearTimeout(timer);
       signal?.removeEventListener("abort", onAbort);
     };
     const onAbort = (): void => {
@@ -38,7 +38,7 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string,
       cleanup();
       reject(new Error("操作已取消。"));
     };
-    const timer = globalThis.setTimeout(() => {
+    const timer = window.setTimeout(() => {
       if (settled) return;
       settled = true;
       cleanup();

@@ -2,7 +2,7 @@
   "id": "evidence-inbox",
   "name": "Evidence Inbox",
   "version": "0.3.0",
-  "minAppVersion": "1.11.4",
+  "minAppVersion": "1.13.0",
   "description": "Paste Xiaohongshu (RedNote) share links, preview them, and save each public post with its images as a source-backed Markdown note. No login, no background sync.",
   "author": "Rexxall",
   "isDesktopOnly": true,

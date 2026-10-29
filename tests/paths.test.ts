@@ -8,6 +8,7 @@ describe("vault paths", () => {
     expect(normalizeVaultFolder("Evidence Inbox/bad]]name", "fallback")).toBe("fallback");
     expect(normalizeVaultFolder("Evidence Inbox/bad\nname", "fallback")).toBe("fallback");
     expect(normalizeVaultFolder("Evidence Inbox/小红书", "fallback")).toBe("Evidence Inbox/小红书");
+    expect(normalizeVaultFolder(".trash/notes", "fallback")).toBe("fallback");
   });
 
   it("always retains the source ID suffix after long titles", () => {

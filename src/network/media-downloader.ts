@@ -1,4 +1,4 @@
-import type { App, TFile } from "obsidian";
+import { TFile, type App } from "obsidian";
 import type { RemoteImage } from "../types";
 import { isAllowedMediaUrl, sanitizeDiagnostic } from "../core/security";
 import { joinVaultPath, mediaExtension } from "../core/paths";
@@ -67,8 +67,8 @@ export class MediaDownloader {
         const extension = mediaExtension(contentType, image.remoteUrl);
         const path = joinVaultPath(this.mediaFolder, `${sourceId}-${String(index + 1).padStart(2, "0")}.${extension}`);
         const existing = this.app.vault.getAbstractFileByPath(path);
-        if (existing && "extension" in existing) {
-          await this.app.vault.modifyBinary(existing as TFile, response.arrayBuffer);
+        if (existing instanceof TFile) {
+          await this.app.vault.modifyBinary(existing, response.arrayBuffer);
         } else if (await this.app.vault.adapter.exists(path)) {
           throw new Error("目标图片路径被非文件项目占用");
         } else {
@@ -97,7 +97,7 @@ export async function reuseExistingMedia(
     for (const extension of MEDIA_EXTENSIONS) {
       const candidate = joinVaultPath(mediaFolder, `${sourceId}-${String(index + 1).padStart(2, "0")}.${extension}`);
       const existing = app.vault.getAbstractFileByPath(candidate);
-      if (existing && "extension" in existing) {
+      if (existing instanceof TFile) {
         localPath = candidate;
         break;
       }

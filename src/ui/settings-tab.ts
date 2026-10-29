@@ -1,183 +1,203 @@
-import { App, Notice, PluginSettingTab, Setting } from "obsidian";
+import { App, Notice, PluginSettingTab, type SettingDefinitionItem } from "obsidian";
 import type EvidenceInboxPlugin from "../main";
+import type { EvidenceInboxSettings } from "../settings";
 import { KNOWLEDGE_TEMPLATES } from "../core/knowledge-templates";
 import { normalizeVaultFolder } from "../core/paths";
 import { sanitizeAiBaseUrl } from "../settings";
 import type { KnowledgeTemplateId } from "../types";
 import { createObsidianPicker } from "./obsidian-picker";
 
+type FolderKey = "captureFolder" | "mediaFolder" | "reportFolder";
+const FOLDER_FALLBACKS: Record<FolderKey, string> = {
+  captureFolder: "Evidence Inbox/小红书",
+  mediaFolder: "Evidence Inbox/Assets",
+  reportFolder: "Evidence Inbox/Reports"
+};
+const LINK = "obsidian://evidence-inbox?url=";
+
+/** Declarative settings (Obsidian 1.13+), so every row shows up in Obsidian's settings search. */
 export class EvidenceInboxSettingTab extends PluginSettingTab {
   constructor(app: App, private readonly owner: EvidenceInboxPlugin) {
     super(app, owner);
+    this.containerEl.addClass("evidence-inbox-settings", "ap", "ap-settings");
   }
 
-  display(): void {
-    const { containerEl } = this;
-    containerEl.empty();
-    containerEl.addClass("evidence-inbox-settings", "ap", "ap-settings");
-    containerEl.createEl("p", {
-      cls: "ap-section-note ei-settings-intro",
-      text: "只在你点“预览”或“导入”时联网，处理你主动粘贴的公开链接。"
-    });
-
-    new Setting(containerEl)
-      .setName("快速开始")
-      .setDesc("使用步骤，以及插件不做什么。")
-      .addButton((button) => button.setButtonText("打开说明").onClick(() => this.owner.openOnboarding()));
-
-    new Setting(containerEl)
-      .setName("默认本地化图片")
-      .setDesc("图片失败时仍会保存正文，并保留去掉查询参数的远程链接。")
-      .addToggle((toggle) => toggle
-        .setValue(this.owner.settings.localizeImagesByDefault)
-        .onChange(async (value) => {
-          this.owner.settings.localizeImagesByDefault = value;
-          await this.owner.saveSettings();
-        }));
-
-    new Setting(containerEl)
-      .setName("默认知识卡")
-      .setDesc("“仅原始归档”完全不调用 AI。")
-      .then((setting) => createObsidianPicker(
-        this.app,
-        setting.controlEl,
-        KNOWLEDGE_TEMPLATES.map((template) => ({ value: template.id, label: template.label, desc: template.description })),
-        this.owner.settings.defaultTemplate,
-        async (value: KnowledgeTemplateId) => {
-          this.owner.settings.defaultTemplate = value;
-          await this.owner.saveSettings();
-        },
-        "默认知识卡"
-      ));
-
-    new Setting(containerEl)
-      .setName("单批最大链接数")
-      .setDesc("最多 10 条。页面逐条读取，每条之间停约一秒，不对平台集中请求。")
-      .then((setting) => createObsidianPicker(
-        this.app,
-        setting.controlEl,
-        Array.from({ length: 10 }, (_, index) => ({ value: String(index + 1), label: `${index + 1} 条` })),
-        String(this.owner.settings.maxBatchSize),
-        async (value) => {
-          this.owner.settings.maxBatchSize = Number(value);
-          await this.owner.saveSettings();
-        },
-        "单批最大链接数"
-      ));
-
-    new Setting(containerEl).setName("保存位置").setHeading();
-    this.addFolderSetting("笔记", "captureFolder", "Evidence Inbox/小红书",
-      `库内相对路径；不能用 ..，也不能放进配置目录 ${this.app.vault.configDir}。`);
-    this.addFolderSetting("图片", "mediaFolder", "Evidence Inbox/Assets", "按来源 ID 命名，重复导入不会多存一份。");
-    this.addFolderSetting("报告", "reportFolder", "Evidence Inbox/Reports", "一次导入多条，或有条目未完整导入时，写一份逐条报告。");
-
-    new Setting(containerEl).setName("从别处打开").setHeading();
-    const link = "obsidian://evidence-inbox?url=";
-    const linkSetting = new Setting(containerEl)
-      .setName("唤起链接")
-      .addButton((button) => button.setButtonText("复制").onClick(async () => {
-        try {
-          await navigator.clipboard.writeText(link);
-          new Notice("已复制。在后面接上编码后的分享链接即可。");
-        } catch {
-          new Notice("复制失败，请手动选中复制。");
-        }
-      }));
-    linkSetting.descEl.appendText("在快捷指令、Raycast 或浏览器书签里打开 ");
-    linkSetting.descEl.createSpan({ cls: "ei-code", text: `${link}<编码后的链接>` });
-    linkSetting.descEl.appendText("，会打开导入窗口并填好链接；仍要你点“预览”才会联网。");
-
-    new Setting(containerEl)
-      .setName("可选 AI")
-      .setDesc("自带 key（BYOK），默认关闭。启用后，所选笔记的标题、作者、标签和正文会发送到你配置的 API 服务；图片不会发送。请自行确认服务商的数据政策与费用。")
-      .setHeading();
-
-    new Setting(containerEl)
-      .setName("启用 AI 知识卡")
-      .setDesc("基础归档在 AI 关闭或失败时仍可完成。")
-      .addToggle((toggle) => toggle
-        .setValue(this.owner.settings.aiEnabled)
-        .onChange(async (value) => {
-          this.owner.settings.aiEnabled = value;
-          await this.owner.saveSettings();
-          this.display();
-        }));
-
-    const apiKeySetting = new Setting(containerEl)
-      .setName("API key")
-      .setDesc("使用 Obsidian SecretStorage；不会写进插件 data.json、笔记、报告或日志。")
-      .addText((text) => {
-        text.inputEl.type = "password";
-        text.setPlaceholder(this.owner.hasAiApiKey() ? "已安全保存；粘贴可替换" : "留空表示未配置")
-          .onChange((value) => this.owner.setAiApiKey(value.trim()));
-      });
-    apiKeySetting.setDisabled(!this.owner.settings.aiEnabled);
-
-    const baseUrlSetting = new Setting(containerEl)
-      .setName("API base URL")
-      .setDesc("仅允许 HTTPS；本机 localhost 可使用 HTTP。保存前会移除用户名、密码、查询参数和片段。")
-      .addText((text) => text
-        .setPlaceholder("https://api.openai.com/v1")
-        .setValue(this.owner.settings.aiBaseUrl)
-        .onChange(async (value) => {
-          this.owner.settings.aiBaseUrl = sanitizeAiBaseUrl(value);
-          await this.owner.saveSettings();
-        }));
-    baseUrlSetting.setDisabled(!this.owner.settings.aiEnabled);
-
-    const modelSetting = new Setting(containerEl)
-      .setName("模型名称")
-      .setDesc("不预设模型，避免替你选择费用或供应商；填写你的服务实际支持的模型 ID。")
-      .addText((text) => text
-        .setPlaceholder("例如：服务商提供的模型 ID")
-        .setValue(this.owner.settings.aiModel)
-        .onChange(async (value) => {
-          this.owner.settings.aiModel = value.trim();
-          await this.owner.saveSettings();
-        }));
-    modelSetting.setDisabled(!this.owner.settings.aiEnabled);
-
-    const contextSetting = new Setting(containerEl)
-      .setName("我的当前目标")
-      .setDesc("帮助 AI 判断相关性和可连接项目；不要填写密码、证件号等敏感信息。")
-      .addTextArea((text) => {
-        text.inputEl.rows = 5;
-        text.setPlaceholder("例如：医学研究、日本生活、AI 产品开发……")
-          .setValue(this.owner.settings.userContext)
-          .onChange(async (value) => {
-            this.owner.settings.userContext = value.trim().slice(0, 4_000);
-            await this.owner.saveSettings();
-          });
-      });
-    contextSetting.setDisabled(!this.owner.settings.aiEnabled);
-
-    new Setting(containerEl)
-      .setName("清除 API key")
-      .setDesc("立即从 SecretStorage 移除已保存的 key。")
-      .addButton((button) => button
-        .setButtonText("清除")
-        .setWarning()
-        .setDisabled(!this.owner.hasAiApiKey())
-        .onClick(() => {
-          this.owner.setAiApiKey("");
-          this.display();
-        }));
+  getControlValue(key: string): unknown {
+    return this.owner.settings[key as keyof EvidenceInboxSettings];
   }
 
-  private addFolderSetting(
-    name: string,
-    key: "captureFolder" | "mediaFolder" | "reportFolder",
-    fallback: string,
-    description: string
-  ): void {
-    new Setting(this.containerEl)
-      .setName(name)
-      .setDesc(description)
-      .addText((text) => text
-        .setValue(this.owner.settings[key])
-        .onChange(async (value) => {
-          this.owner.settings[key] = normalizeVaultFolder(value, fallback, this.app.vault.configDir);
-          await this.owner.saveSettings();
-        }));
+  async setControlValue(key: string, value: unknown): Promise<void> {
+    const settings = this.owner.settings;
+    if (key in FOLDER_FALLBACKS) {
+      const folder = key as FolderKey;
+      settings[folder] = normalizeVaultFolder(String(value), FOLDER_FALLBACKS[folder], this.app.vault.configDir);
+    } else if (key === "aiBaseUrl") {
+      settings.aiBaseUrl = sanitizeAiBaseUrl(String(value));
+    } else if (key === "aiModel") {
+      settings.aiModel = String(value).trim();
+    } else if (key === "userContext") {
+      settings.userContext = String(value).trim().slice(0, 4_000);
+    } else if (key === "localizeImagesByDefault" || key === "aiEnabled") {
+      settings[key] = Boolean(value);
+    }
+    await this.owner.saveSettings();
+    // Show or hide the AI rows after AI is switched on or off.
+    this.refreshDomState();
+  }
+
+  getSettingDefinitions(): SettingDefinitionItem[] {
+    const settings = this.owner.settings;
+    // The AI rows appear only while AI is on; clearing a saved key stays possible either way.
+    const aiOn = () => settings.aiEnabled;
+    return [
+      {
+        type: "group",
+        items: [
+          {
+            name: "快速开始",
+            desc: "只在你点“预览”或“导入”时联网，处理你主动粘贴的公开链接。点这里看使用步骤，以及插件不做什么。",
+            aliases: ["说明", "onboarding"],
+            action: () => this.owner.openOnboarding()
+          },
+          {
+            name: "默认本地化图片",
+            desc: "图片失败时仍会保存正文，并保留去掉查询参数的远程链接。",
+            control: { type: "toggle", key: "localizeImagesByDefault" }
+          },
+          {
+            name: "默认知识卡",
+            desc: "“仅原始归档”完全不调用 AI。",
+            render: (setting) => {
+              createObsidianPicker(
+                this.app,
+                setting.controlEl,
+                KNOWLEDGE_TEMPLATES.map((template) => ({ value: template.id, label: template.label, desc: template.description })),
+                settings.defaultTemplate,
+                async (value: KnowledgeTemplateId) => {
+                  settings.defaultTemplate = value;
+                  await this.owner.saveSettings();
+                },
+                "默认知识卡"
+              );
+            }
+          },
+          {
+            name: "单批最大链接数",
+            desc: "最多 10 条。页面逐条读取，每条之间停约一秒，不对平台集中请求。",
+            render: (setting) => {
+              createObsidianPicker(
+                this.app,
+                setting.controlEl,
+                Array.from({ length: 10 }, (_, index) => ({ value: String(index + 1), label: `${index + 1} 条` })),
+                String(settings.maxBatchSize),
+                async (value) => {
+                  settings.maxBatchSize = Number(value);
+                  await this.owner.saveSettings();
+                },
+                "单批最大链接数"
+              );
+            }
+          }
+        ]
+      },
+      {
+        type: "group",
+        heading: "保存位置",
+        items: [
+          {
+            name: "笔记",
+            desc: `库内相对路径；不能用 ..，也不能放进隐藏文件夹（例如配置目录 ${this.app.vault.configDir}）。`,
+            control: { type: "folder", key: "captureFolder", placeholder: FOLDER_FALLBACKS.captureFolder }
+          },
+          {
+            name: "图片",
+            desc: "按来源 ID 命名，重复导入不会多存一份。",
+            control: { type: "folder", key: "mediaFolder", placeholder: FOLDER_FALLBACKS.mediaFolder }
+          },
+          {
+            name: "报告",
+            desc: "一次导入多条，或有条目未完整导入时，写一份逐条报告。",
+            control: { type: "folder", key: "reportFolder", placeholder: FOLDER_FALLBACKS.reportFolder }
+          }
+        ]
+      },
+      {
+        type: "group",
+        heading: "从别处打开",
+        items: [
+          {
+            name: "唤起链接",
+            aliases: ["obsidian://", "快捷指令", "Raycast"],
+            render: (setting) => {
+              setting.descEl.appendText("在快捷指令、Raycast 或浏览器书签里打开 ");
+              setting.descEl.createSpan({ cls: "ei-code", text: `${LINK}<编码后的链接>` });
+              setting.descEl.appendText("，会打开导入窗口并填好链接；仍要你点“预览”才会联网。");
+              setting.addButton((button) => button.setButtonText("复制").onClick(async () => {
+                try {
+                  await navigator.clipboard.writeText(LINK);
+                  new Notice("已复制。在后面接上编码后的分享链接即可。");
+                } catch {
+                  new Notice("复制失败，请手动选中复制。");
+                }
+              }));
+            }
+          }
+        ]
+      },
+      {
+        type: "group",
+        heading: "可选 AI",
+        items: [
+          {
+            name: "启用 AI 知识卡",
+            desc: "自带 key（BYOK），默认关闭。启用后，所选笔记的标题、作者、标签和正文会发送到你配置的 API 服务；图片不会发送。请自行确认服务商的数据政策与费用。基础归档在 AI 关闭或失败时仍可完成。",
+            control: { type: "toggle", key: "aiEnabled" }
+          },
+          {
+            name: "API key",
+            desc: "使用 Obsidian SecretStorage；不会写进插件 data.json、笔记、报告或日志。",
+            render: (setting) => {
+              setting.addText((text) => {
+                text.inputEl.type = "password";
+                text.setPlaceholder(this.owner.hasAiApiKey() ? "已安全保存；粘贴可替换" : "留空表示未配置")
+                  .onChange((value) => this.owner.setAiApiKey(value.trim()));
+              });
+            },
+            visible: aiOn
+          },
+          {
+            name: "API base URL",
+            desc: "仅允许 HTTPS；本机 localhost 可使用 HTTP。保存前会移除用户名、密码、查询参数和片段。",
+            control: { type: "text", key: "aiBaseUrl", placeholder: "https://api.openai.com/v1" }, visible: aiOn
+          },
+          {
+            name: "模型名称",
+            desc: "不预设模型，避免替你选择费用或供应商；填写你的服务实际支持的模型 ID。",
+            control: { type: "text", key: "aiModel", placeholder: "例如：服务商提供的模型 ID" }, visible: aiOn
+          },
+          {
+            name: "我的当前目标",
+            desc: "帮助 AI 判断相关性和可连接项目；不要填写密码、证件号等敏感信息。",
+            control: { type: "textarea", key: "userContext", rows: 5, placeholder: "例如：医学研究、日本生活、AI 产品开发……" }, visible: aiOn
+          },
+          {
+            name: "清除 API key",
+            desc: "立即从 SecretStorage 移除已保存的 key。",
+            render: (setting) => {
+              setting.addButton((button) => button
+                .setButtonText("清除")
+                .setDestructive()
+                .setDisabled(!this.owner.hasAiApiKey())
+                .onClick(() => {
+                  this.owner.setAiApiKey("");
+                  button.setDisabled(true);
+                  new Notice("已清除 API key。");
+                }));
+            },
+            visible: () => settings.aiEnabled || this.owner.hasAiApiKey()
+          }
+        ]
+      }
+    ];
   }
 }

@@ -3,8 +3,8 @@ const FORBIDDEN_FILENAME = /[\\/:*?"<>|[\]#^\u0000-\u001f\u007f]/g;
 // eslint-disable-next-line no-control-regex -- control characters are exactly what must be rejected
 const FORBIDDEN_VAULT_PART = /[[\]|#^\u0000-\u001f\u007f]/;
 
-/** `configDir` is the vault's own config folder when it is not the usual `.obsidian`. */
-export function normalizeVaultFolder(value: string, fallback: string, configDir = ".obsidian"): string {
+/** Hidden top-level folders (the vault's config folder among them) are refused: Obsidian does not index them. */
+export function normalizeVaultFolder(value: string, fallback: string, configDir?: string): string {
   const parts = value
     .replace(/\\/g, "/")
     .split("/")
@@ -14,8 +14,8 @@ export function normalizeVaultFolder(value: string, fallback: string, configDir 
     parts.length === 0 ||
     parts.some((part) => part === "." || part === "..") ||
     parts.some((part) => FORBIDDEN_VAULT_PART.test(part)) ||
-    parts[0]?.toLowerCase().startsWith(".obsidian") === true ||
-    parts[0]?.toLowerCase() === configDir.replace(/^\/+|\/+$/g, "").toLowerCase()
+    parts[0]?.startsWith(".") === true ||
+    (configDir !== undefined && parts[0]?.toLowerCase() === configDir.replace(/^\/+|\/+$/g, "").toLowerCase())
   ) {
     return fallback;
   }

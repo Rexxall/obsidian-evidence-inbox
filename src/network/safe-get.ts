@@ -117,7 +117,7 @@ async function resolvePublicAddress(hostname: string, signal?: AbortSignal): Pro
     if (!isPublicNetworkAddress(literal)) throw new Error("网络目标不是公开地址，已停止请求。");
     return { address: literal, family: literalFamily as 4 | 6 };
   }
-  const addresses = await withAbort(lookup(hostname, { all: true, verbatim: true }), signal);
+  const addresses = await withAbort(lookup(hostname, { all: true, order: "verbatim" }), signal);
   if (!addresses.length || addresses.some((item) => !isPublicNetworkAddress(item.address))) {
     throw new Error("网络目标解析到非公开地址，已停止请求。");
   }
@@ -151,9 +151,9 @@ async function oneRequest(
   return new Promise((resolve, reject) => {
     let settled = false;
     let activeStream: Readable | null = null;
-    let absoluteTimer: ReturnType<typeof setTimeout> | undefined;
+    let absoluteTimer: number | undefined;
     const cleanup = (): void => {
-      if (absoluteTimer) clearTimeout(absoluteTimer);
+      if (absoluteTimer) window.clearTimeout(absoluteTimer);
       signal?.removeEventListener("abort", abortRequest);
     };
     const finishError = (error: unknown): void => {
@@ -228,7 +228,7 @@ async function oneRequest(
       req.destroy(error);
       finishError(error);
     };
-    absoluteTimer = setTimeout(() => {
+    absoluteTimer = window.setTimeout(() => {
       const error = new Error("网络请求超时，请稍后重试。");
       activeStream?.destroy(error);
       req.destroy(error);
@@ -251,7 +251,7 @@ export async function safeNetworkGet(
   const abortFromCaller = (): void => controller.abort();
   options.signal?.addEventListener("abort", abortFromCaller, { once: true });
   if (options.signal?.aborted) controller.abort();
-  const deadline = setTimeout(() => {
+  const deadline = window.setTimeout(() => {
     timedOut = true;
     controller.abort();
   }, options.timeoutMs);
@@ -274,7 +274,7 @@ export async function safeNetworkGet(
     if (options.signal?.aborted) throw new Error("操作已取消。");
     throw error;
   } finally {
-    clearTimeout(deadline);
+    window.clearTimeout(deadline);
     options.signal?.removeEventListener("abort", abortFromCaller);
   }
 }

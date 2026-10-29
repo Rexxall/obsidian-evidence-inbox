@@ -46,7 +46,7 @@ Bookmarks inside an app are easy to collect and hard to use: the post may disapp
 
 1. Download `main.js`, `manifest.json` and `styles.css` (or the zip) from the latest release.
 2. Put them into `<your vault>/.obsidian/plugins/evidence-inbox/`.
-3. **Settings → Community plugins**, reload, enable **Evidence Inbox**. Requires Obsidian desktop 1.11.4 or later.
+3. **Settings → Community plugins**, reload, enable **Evidence Inbox**. Requires Obsidian desktop 1.13.0 or later.
 4. Click the inbox icon in the ribbon, or run **导入小红书公开链接**.
 
 ## Network use
@@ -148,7 +148,7 @@ MIT
 
 ## 安装
 
-需要 Obsidian 桌面版 `1.11.4+`（使用 SecretStorage 和桌面端网络读取）。从最新 release 下载 zip，解压到 `<你的库>/.obsidian/plugins/evidence-inbox/`（里面应有 `main.js`、`manifest.json`、`styles.css`），在“设置 → 第三方插件”里刷新并启用。
+需要 Obsidian 桌面版 `1.13.0+`（使用 SecretStorage、桌面端网络读取和新版声明式设置页）。从最新 release 下载 zip，解压到 `<你的库>/.obsidian/plugins/evidence-inbox/`（里面应有 `main.js`、`manifest.json`、`styles.css`），在“设置 → 第三方插件”里刷新并启用。
 
 从源码构建需要 Node.js 20+ 与 pnpm：
 
@@ -226,7 +226,7 @@ AI 默认关闭，也不预设模型。只有同时满足以下条件，导入�
 - 填写 HTTPS Base URL（本机 `localhost` 允许 HTTP）；
 - 填写该服务实际支持的模型 ID。
 
-启用后只发送所选笔记的标题、作者、标签、正文和你填写的“当前目标”；不会发送图片、Cookie、分享参数或 Vault 其他笔记。API Key 使用 Obsidian `SecretStorage` 保存，不写入插件 `data.json`；设置页提供立即清除按钮。插件因此要求 Obsidian `1.11.4+`。
+启用后只发送所选笔记的标题、作者、标签、正文和你填写的“当前目标”；不会发送图片、Cookie、分享参数或 Vault 其他笔记。API Key 使用 Obsidian `SecretStorage` 保存，不写入插件 `data.json`；设置页提供立即清除按钮。插件因此要求 Obsidian `1.13.0+`（设置页用 1.13 的声明式写法，能在 Obsidian 设置搜索里搜到）。
 
 AI 输出始终标为“待核验”。它不是事实核验，也不会把平台内容自动伪装成你的个人结论。
 
@@ -278,7 +278,7 @@ pnpm run build
 
 ## 卸载
 
-1. 在 Obsidian `1.11.4+` 中禁用 Evidence Inbox；
+1. 在 Obsidian `1.13.0+` 中禁用 Evidence Inbox；
 2. 如使用过 AI，在设置中先点“清除 API Key”；
 3. 删除 `.obsidian/plugins/evidence-inbox/`；
 4. `Evidence Inbox/` 下的 Markdown、图片和报告不会自动删除，由你自行保留或整理。

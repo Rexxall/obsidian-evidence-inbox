@@ -193,7 +193,7 @@ export class EvidenceImportModal extends Modal {
 
   private renderProgress(label: string, completed: number, total: number): void {
     this.stage = "other";
-    this.titleEl.setText("Evidence Inbox");
+    this.titleEl.setText("正在处理");
     this.contentEl.empty();
     this.renderSteps(this.progressStep);
     const card = this.contentEl.createDiv({ cls: "ap-card is-inset ei-progress" });

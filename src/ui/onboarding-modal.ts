@@ -7,7 +7,7 @@ export class EvidenceInboxOnboardingModal extends Modal {
   }
 
   onOpen(): void {
-    this.titleEl.setText("Evidence Inbox：从来源到行动");
+    this.titleEl.setText("从来源到行动");
     this.modalEl.addClass("evidence-inbox-modal", "ap", "ap-modal");
     const { contentEl } = this;
     contentEl.empty();

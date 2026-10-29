@@ -21,7 +21,7 @@ export default class EvidenceInboxPlugin extends Plugin {
     if (sanitizedAiEndpoint) await this.saveSettings();
     this.addSettingTab(new EvidenceInboxSettingTab(this.app, this));
     this.registerMarkdownPostProcessor((element, context) => decorateNoteZones(element, context));
-    this.addRibbonIcon("inbox", "导入到 Evidence Inbox", () => this.openImportModal());
+    this.addRibbonIcon("inbox", "导入小红书笔记", () => this.openImportModal());
     this.addCommand({
       id: "import-xhs-links",
       name: "导入小红书公开链接",
@@ -55,7 +55,7 @@ export default class EvidenceInboxPlugin extends Plugin {
   openImportModal(initialText = ""): void {
     if (this.importModal) {
       if (initialText && this.importModal.appendInput(initialText)) return;
-      new Notice("已有一个 Evidence Inbox 导入窗口，请先完成当前操作。");
+      new Notice("导入窗口已经开着，请先完成当前操作。");
       return;
     }
     this.importModal = new EvidenceImportModal(this.app, this, initialText);

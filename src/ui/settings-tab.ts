@@ -35,6 +35,8 @@ export class EvidenceInboxSettingTab extends PluginSettingTab {
       settings.aiBaseUrl = sanitizeAiBaseUrl(String(value));
     } else if (key === "aiModel") {
       settings.aiModel = String(value).trim();
+    } else if (key === "noteCssClass") {
+      settings.noteCssClass = String(value).trim();
     } else if (key === "userContext") {
       settings.userContext = String(value).trim().slice(0, 4_000);
     } else if (key === "localizeImagesByDefault" || key === "aiEnabled") {
@@ -118,6 +120,12 @@ export class EvidenceInboxSettingTab extends PluginSettingTab {
             name: "报告",
             desc: "一次导入多条，或有条目未完整导入时，写一份逐条报告。",
             control: { type: "folder", key: "reportFolder", placeholder: FOLDER_FALLBACKS.reportFolder }
+          },
+          {
+            name: "笔记样式类",
+            desc: "写进每篇导入笔记和报告的 cssclasses，让库里的 CSS 片段给它换样子；插件本身不带这个样式。留空就不加。",
+            aliases: ["Note CSS class", "cssclasses"],
+            control: { type: "text", key: "noteCssClass", placeholder: "例如 evidence-note" }
           }
         ]
       },

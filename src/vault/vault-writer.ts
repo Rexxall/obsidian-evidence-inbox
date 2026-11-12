@@ -11,6 +11,7 @@ import {
 } from "../core/markdown";
 import { joinVaultPath, safeFilename, stableNoteFilename } from "../core/paths";
 import { sanitizeDiagnostic } from "../core/security";
+import { noteClassName, withCssClass } from "../core/note-class";
 
 async function ensureFolder(app: App, folderPath: string): Promise<void> {
   const parts = folderPath.split("/").filter(Boolean);
@@ -38,15 +39,16 @@ export interface ExistingSourceNote {
   managed: boolean;
 }
 
-function sourceIdFromContent(content: string): string {
-  const frontmatter = content.match(/^---\r?\n([\s\S]*?)\r?\n---/u)?.[1] ?? "";
-  const raw = frontmatter.match(/^evidence_source_id\s*:\s*(.+)$/mu)?.[1]?.trim() ?? "";
-  if (!raw) return "";
+/** The evidence_source_id of a note the metadata cache has not indexed yet. */
+function sourceFrontmatter(content: string): { evidence_source_id?: string } | undefined {
+  const block = content.match(/^---\r?\n([\s\S]*?)\r?\n---/u)?.[1];
+  const raw = block?.match(/^evidence_source_id\s*:\s*(.+)$/mu)?.[1]?.trim();
+  if (!raw) return undefined;
   try {
     const parsed: unknown = JSON.parse(raw);
-    return typeof parsed === "string" ? parsed.trim() : typeof parsed === "number" ? String(parsed) : "";
+    return { evidence_source_id: typeof parsed === "string" || typeof parsed === "number" ? String(parsed) : "" };
   } catch {
-    return raw.replace(/^['"]|['"]$/g, "").trim();
+    return { evidence_source_id: raw.replace(/^['"]|['"]$/g, "") };
   }
 }
 
@@ -68,10 +70,11 @@ export class EvidenceVaultWriter {
     if (!this.sourceIndexPromise) {
       this.sourceIndexPromise = (async () => {
         for (const file of this.app.vault.getMarkdownFiles()) {
-          const frontmatter = this.app.metadataCache.getFileCache(file)?.frontmatter;
-          let candidate = String(frontmatter?.evidence_source_id ?? "").trim();
-          if (!candidate && !frontmatter) candidate = sourceIdFromContent(await this.app.vault.read(file));
-          candidate = candidate.toLowerCase();
+          // The metadata cache answers for every indexed note; reading bodies stalled large vaults on the first import.
+          // Only a note Obsidian has not indexed yet is read, so an import right after startup still finds it.
+          const cache = this.app.metadataCache.getFileCache(file);
+          const frontmatter = cache ? cache.frontmatter : sourceFrontmatter(await this.app.vault.read(file));
+          const candidate = String(frontmatter?.evidence_source_id ?? "").trim().toLowerCase();
           if (candidate && !this.sourceIndex.has(candidate)) this.sourceIndex.set(candidate, file);
         }
       })();
@@ -137,6 +140,7 @@ export class EvidenceVaultWriter {
           const next = managedFrontmatter(input);
           const nextTags = frontmatterTags(next.tags);
           Object.assign(frontmatter, next, { tags: [...new Set([...currentTags, ...nextTags])] });
+          withCssClass(frontmatter, this.settings.noteCssClass);
           if (!input.source.publishedAt) delete frontmatter.published_at;
           if (input.preserveKnowledgeCard) {
             if (previousTemplate === undefined) delete frontmatter.knowledge_template;
@@ -162,7 +166,7 @@ export class EvidenceVaultWriter {
     }
 
     const path = await this.availablePath(input.source.title, input.source.sourceId);
-    const file = await this.app.vault.create(path, renderNewNote(input));
+    const file = await this.app.vault.create(path, renderNewNote(input, this.settings.noteCssClass));
     this.sourceIndex.set(input.source.sourceId.toLowerCase(), file);
     return { outcome: resultOutcome(input, "created"), path: file.path };
   }
@@ -184,9 +188,11 @@ export class EvidenceVaultWriter {
         : "—";
       return `| ${result.outcome} | ${title} | ${output} | ${detail || "—"} |`;
     });
+    const cssClass = noteClassName(this.settings.noteCssClass);
     const content = [
       "---",
       'generated_by: "evidence-inbox"',
+      ...(cssClass ? [`cssclasses: [${JSON.stringify(cssClass)}]`] : []),
       `generated_at: ${JSON.stringify(now.toISOString())}`,
       `total: ${results.length}`,
       "---",

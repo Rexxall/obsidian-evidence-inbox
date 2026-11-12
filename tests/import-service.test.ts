@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { TFile, type App } from "obsidian";
 import { EvidenceImportService } from "../src/import/import-service";
 import { normalizeSettings } from "../src/settings";
+import { EvidenceVaultWriter } from "../src/vault/vault-writer";
 import type { EvidenceSource, PreviewFailure, PreviewSuccess } from "../src/types";
 import type { HttpGateway, HttpBinaryResponse, HttpTextResponse } from "../src/network/http";
 
@@ -250,6 +251,50 @@ describe("batch import transaction", () => {
     const second = await reloadedService.importPreviews([item], { template: "raw", localizeImages: false, generateWithAi: false });
     expect(second.results[0]?.outcome).toBe("updated");
     expect([...textFiles.keys()].filter((path) => path.startsWith(settings.captureFolder))).toHaveLength(1);
+  });
+
+  it("finds sources from the metadata cache without reading note bodies", async () => {
+    const { app } = fakeApp();
+    const settings = normalizeSettings({});
+    const service = new EvidenceImportService(app, settings, new FakeHttp());
+    const item = preview(source("67abc1230000000088888888"));
+    await service.importPreviews([item], { template: "raw", localizeImages: false, generateWithAi: false });
+    await app.vault.create("普通笔记.md", "没有 frontmatter 的笔记");
+    const cache = app.metadataCache as unknown as { getFileCache: (file: { path: string }) => unknown };
+    const getFileCache = cache.getFileCache;
+    cache.getFileCache = (file) => file.path === "普通笔记.md" ? {} : getFileCache(file);
+    let reads = 0;
+    const vault = app.vault as unknown as { read: (file: unknown) => Promise<string> };
+    const read = vault.read;
+    vault.read = async (file) => { reads += 1; return read(file); };
+    const reloaded = new EvidenceImportService(app, settings, new FakeHttp());
+    await reloaded.importPreviews([item], { template: "raw", localizeImages: false, generateWithAi: false });
+    // One read: the managed-block check on the matched note. The plain note is never opened.
+    expect(reads).toBe(1);
+  });
+
+  it("adds the note class to new notes, refreshed notes and reports, keeping existing classes", async () => {
+    const { app, textFiles, frontmatter } = fakeApp();
+    const settings = normalizeSettings({ noteCssClass: "ih-receipt" });
+    const service = new EvidenceImportService(app, settings, new FakeHttp());
+    const item = preview(source("67abc1230000000099999999"));
+    const options = { template: "raw" as const, localizeImages: false, generateWithAi: false };
+    const first = await service.importPreviews([item], options);
+    const notePath = first.results[0]?.path ?? "";
+    expect(frontmatter.get(notePath)?.cssclasses).toEqual(["ih-receipt"]);
+    frontmatter.set(notePath, { ...frontmatter.get(notePath), cssclasses: undefined, cssclass: "wide" });
+    await service.importPreviews([item], options);
+    expect(frontmatter.get(notePath)?.cssclass).toBeUndefined();
+    expect(frontmatter.get(notePath)?.cssclasses).toEqual(["wide", "ih-receipt"]);
+    const reportPath = await new EvidenceVaultWriter(app, settings).writeReport(first.results);
+    expect(textFiles.get(reportPath)).toContain('cssclasses: ["ih-receipt"]');
+  });
+
+  it("adds no class by default", async () => {
+    const { app, textFiles } = fakeApp();
+    const service = new EvidenceImportService(app, normalizeSettings({}), new FakeHttp());
+    const first = await service.importPreviews([preview(source("67abc1230000000055555555"))], { template: "raw", localizeImages: false, generateWithAi: false });
+    expect(textFiles.get(first.results[0]?.path ?? "")).not.toContain("cssclasses");
   });
 
   it("preserves an editor change that lands immediately before the atomic source refresh", async () => {

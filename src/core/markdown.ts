@@ -1,6 +1,7 @@
 import type { KnowledgeCard, KnowledgeTemplateId, WriteNoteInput } from "../types";
 import { createPlaceholderCard, getTemplateDefinition } from "./knowledge-templates";
 import { stripUrlSecrets } from "./security";
+import { noteClassName } from "./note-class";
 
 export const MANAGED_START = "<!-- evidence-inbox:managed:start -->";
 export const MANAGED_END = "<!-- evidence-inbox:managed:end -->";
@@ -95,8 +96,9 @@ export function managedFrontmatter(input: WriteNoteInput): Record<string, string
   };
 }
 
-export function renderFrontmatter(input: WriteNoteInput): string {
-  const properties = managedFrontmatter(input);
+export function renderFrontmatter(input: WriteNoteInput, cssClass = ""): string {
+  const name = noteClassName(cssClass);
+  const properties = { ...managedFrontmatter(input), ...(name ? { cssclasses: [name] } : {}) };
   const lines = Object.entries(properties).map(([key, value]) =>
     `${key}: ${Array.isArray(value) ? yamlArray(value) : yamlString(value)}`
   );
@@ -152,10 +154,10 @@ export function renderKnowledgeBlock(input: WriteNoteInput): string {
   ].join("\n");
 }
 
-export function renderNewNote(input: WriteNoteInput): string {
+export function renderNewNote(input: WriteNoteInput, cssClass = ""): string {
   const knowledge = renderKnowledgeBlock(input);
   return [
-    renderFrontmatter(input),
+    renderFrontmatter(input, cssClass),
     "",
     renderManagedBlock(input),
     ...(knowledge ? ["", knowledge] : []),

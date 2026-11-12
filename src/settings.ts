@@ -13,6 +13,8 @@ export interface EvidenceInboxSettings {
   aiBaseUrl: string;
   aiModel: string;
   userContext: string;
+  /** Added to the cssclasses of the notes and reports the plugin writes. Empty adds none. */
+  noteCssClass: string;
   hasSeenOnboarding: boolean;
 }
 
@@ -27,6 +29,7 @@ export const DEFAULT_SETTINGS: EvidenceInboxSettings = {
   aiBaseUrl: "https://api.openai.com/v1",
   aiModel: "",
   userContext: "",
+  noteCssClass: "",
   hasSeenOnboarding: false
 };
 
@@ -59,6 +62,7 @@ export function normalizeSettings(value: unknown, configDir?: string): EvidenceI
       : DEFAULT_SETTINGS.aiBaseUrl,
     aiModel: typeof loaded.aiModel === "string" ? loaded.aiModel.trim() : "",
     userContext: typeof loaded.userContext === "string" ? loaded.userContext.trim().slice(0, 4_000) : "",
+    noteCssClass: typeof loaded.noteCssClass === "string" ? loaded.noteCssClass.trim() : "",
     hasSeenOnboarding: booleanValue(loaded.hasSeenOnboarding, false)
   };
 }

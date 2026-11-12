@@ -265,3 +265,6 @@
   font-weight: 600;
   color: var(--ei-zone-color);
 }
+
+/* Serif numbers (on by default): the import progress count. The face comes from styles/ap-signature.css. */
+.evidence-inbox-modal.ap-signed .ei-count.ap-sig-num { font-size: 20px; line-height: 24px; color: var(--ap-label); }

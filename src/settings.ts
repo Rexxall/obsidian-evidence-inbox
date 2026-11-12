@@ -15,6 +15,8 @@ export interface EvidenceInboxSettings {
   userContext: string;
   /** Added to the cssclasses of the notes and reports the plugin writes. Empty adds none. */
   noteCssClass: string;
+  /** The import progress count in Didot italic: the plugin's one signature detail. */
+  serifNumbers: boolean;
   hasSeenOnboarding: boolean;
 }
 
@@ -30,6 +32,7 @@ export const DEFAULT_SETTINGS: EvidenceInboxSettings = {
   aiModel: "",
   userContext: "",
   noteCssClass: "",
+  serifNumbers: true,
   hasSeenOnboarding: false
 };
 
@@ -63,6 +66,7 @@ export function normalizeSettings(value: unknown, configDir?: string): EvidenceI
     aiModel: typeof loaded.aiModel === "string" ? loaded.aiModel.trim() : "",
     userContext: typeof loaded.userContext === "string" ? loaded.userContext.trim().slice(0, 4_000) : "",
     noteCssClass: typeof loaded.noteCssClass === "string" ? loaded.noteCssClass.trim() : "",
+    serifNumbers: loaded.serifNumbers !== false,
     hasSeenOnboarding: booleanValue(loaded.hasSeenOnboarding, false)
   };
 }

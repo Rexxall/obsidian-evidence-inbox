@@ -49,6 +49,7 @@ export class EvidenceImportModal extends Modal {
   onOpen(): void {
     this.disposed = false;
     this.modalEl.addClass("evidence-inbox-modal", "ap", "ap-modal");
+    this.modalEl.toggleClass("ap-signed", this.owner.settings.serifNumbers);
     this.renderInput();
   }
 
@@ -200,7 +201,7 @@ export class EvidenceImportModal extends Modal {
     card.createDiv({ cls: "ei-progress-label", text: label });
     const meter = card.createDiv({ cls: "ap-meter" });
     meter.createEl("i").style.setProperty("--ap-value", `${total ? Math.min(completed / total, 1) * 100 : 0}%`);
-    card.createDiv({ cls: "ei-count", text: `${completed} / ${total}` });
+    card.createDiv({ cls: "ei-count", text: `${completed} / ${total}` }).toggleClass("ap-sig-num", this.owner.settings.serifNumbers);
     if (this.controller && !this.controller.signal.aborted) {
       const foot = this.renderFoot("已完成的条目会保留，尚未开始的条目停止。");
       const cancel = foot.createEl("button", { text: "取消" });

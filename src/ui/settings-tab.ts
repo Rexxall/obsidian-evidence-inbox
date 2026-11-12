@@ -6,6 +6,7 @@ import { normalizeVaultFolder } from "../core/paths";
 import { sanitizeAiBaseUrl } from "../settings";
 import type { KnowledgeTemplateId } from "../types";
 import { createObsidianPicker } from "./obsidian-picker";
+import { watchSettingGroups } from "./setting-groups";
 
 type FolderKey = "captureFolder" | "mediaFolder" | "reportFolder";
 const FOLDER_FALLBACKS: Record<FolderKey, string> = {
@@ -20,6 +21,21 @@ export class EvidenceInboxSettingTab extends PluginSettingTab {
   constructor(app: App, private readonly owner: EvidenceInboxPlugin) {
     super(app, owner);
     this.containerEl.addClass("evidence-inbox-settings", "ap", "ap-settings");
+    owner.register(() => this.hide());
+  }
+
+  private stopGroups: (() => void) | null = null;
+
+  /** Marks group edges while the tab is open; started on every display, stopped on hide and unload. */
+  private watchGroups(): void {
+    if (this.stopGroups) return;
+    this.stopGroups = watchSettingGroups(this.containerEl);
+  }
+
+  hide(): void {
+    this.stopGroups?.();
+    this.stopGroups = null;
+    super.hide();
   }
 
   getControlValue(key: string): unknown {
@@ -39,6 +55,8 @@ export class EvidenceInboxSettingTab extends PluginSettingTab {
       settings.noteCssClass = String(value).trim();
     } else if (key === "userContext") {
       settings.userContext = String(value).trim().slice(0, 4_000);
+    } else if (key === "serifNumbers") {
+      settings.serifNumbers = value === true;
     } else if (key === "localizeImagesByDefault" || key === "aiEnabled") {
       settings[key] = Boolean(value);
     }
@@ -48,6 +66,7 @@ export class EvidenceInboxSettingTab extends PluginSettingTab {
   }
 
   getSettingDefinitions(): SettingDefinitionItem[] {
+    this.watchGroups();
     const settings = this.owner.settings;
     // The AI rows appear only while AI is on; clearing a saved key stays possible either way.
     const aiOn = () => settings.aiEnabled;
@@ -126,6 +145,12 @@ export class EvidenceInboxSettingTab extends PluginSettingTab {
             desc: "写进每篇导入笔记和报告的 cssclasses，让库里的 CSS 片段给它换样子；插件本身不带这个样式。留空就不加。",
             aliases: ["Note CSS class", "cssclasses"],
             control: { type: "text", key: "noteCssClass", placeholder: "例如 evidence-note" }
+          },
+          {
+            name: "数字用衬线",
+            desc: "导入进度的数字用 Didot 斜体；没装 Didot 的系统用 Georgia。",
+            aliases: ["font", "Didot", "字体", "衬线"],
+            control: { type: "toggle", key: "serifNumbers" }
           }
         ]
       },

@@ -1,9 +1,11 @@
-import { App, Notice, PluginSettingTab, type SettingDefinitionItem } from "obsidian";
+import { App, Notice, PluginSettingTab, SettingPage, type SettingDefinitionItem } from "obsidian";
 import type EvidenceInboxPlugin from "../main";
 import type { EvidenceInboxSettings } from "../settings";
 import { KNOWLEDGE_TEMPLATES } from "../core/knowledge-templates";
 import { normalizeVaultFolder } from "../core/paths";
-import { sanitizeAiBaseUrl } from "../settings";
+import { AI_LANG } from "../ai/kit";
+import type { AiServiceSlot } from "../ai/migrate";
+import { renderAiSettings } from "../vendor/rex-ai-kit/settingsUI";
 import type { KnowledgeTemplateId } from "../types";
 import { createObsidianPicker } from "./obsidian-picker";
 import { watchSettingGroups } from "./setting-groups";
@@ -18,7 +20,7 @@ const LINK = "obsidian://evidence-inbox?url=";
 
 /** Declarative settings (Obsidian 1.13+), so every row shows up in Obsidian's settings search. */
 export class EvidenceInboxSettingTab extends PluginSettingTab {
-  constructor(app: App, private readonly owner: EvidenceInboxPlugin) {
+  constructor(app: App, readonly owner: EvidenceInboxPlugin) {
     super(app, owner);
     this.containerEl.addClass("evidence-inbox-settings", "ap", "ap-settings");
     owner.register(() => this.hide());
@@ -47,10 +49,6 @@ export class EvidenceInboxSettingTab extends PluginSettingTab {
     if (key in FOLDER_FALLBACKS) {
       const folder = key as FolderKey;
       settings[folder] = normalizeVaultFolder(String(value), FOLDER_FALLBACKS[folder], this.app.vault.configDir);
-    } else if (key === "aiBaseUrl") {
-      settings.aiBaseUrl = sanitizeAiBaseUrl(String(value));
-    } else if (key === "aiModel") {
-      settings.aiModel = String(value).trim();
     } else if (key === "noteCssClass") {
       settings.noteCssClass = String(value).trim();
     } else if (key === "userContext") {
@@ -68,7 +66,7 @@ export class EvidenceInboxSettingTab extends PluginSettingTab {
   getSettingDefinitions(): SettingDefinitionItem[] {
     this.watchGroups();
     const settings = this.owner.settings;
-    // The AI rows appear only while AI is on; clearing a saved key stays possible either way.
+    // The AI rows appear only while AI is on.
     const aiOn = () => settings.aiEnabled;
     return [
       {
@@ -183,54 +181,76 @@ export class EvidenceInboxSettingTab extends PluginSettingTab {
         items: [
           {
             name: "启用 AI 知识卡",
-            desc: "自带 key（BYOK），默认关闭。启用后，所选笔记的标题、作者、标签和正文会发送到你配置的 API 服务；图片不会发送。请自行确认服务商的数据政策与费用。基础归档在 AI 关闭或失败时仍可完成。",
+            desc: "启用后，所选笔记的标题、作者、标签和正文会发送到所选 AI 服务；图片不会发送。请自行确认服务商的数据政策与费用。基础归档在 AI 关闭或失败时仍可完成。",
             control: { type: "toggle", key: "aiEnabled" }
           },
           {
-            name: "API key",
-            desc: "使用 Obsidian SecretStorage；不会写进插件 data.json、笔记、报告或日志。",
-            render: (setting) => {
-              setting.addText((text) => {
-                text.inputEl.type = "password";
-                text.setPlaceholder(this.owner.hasAiApiKey() ? "已安全保存；粘贴可替换" : "留空表示未配置")
-                  .onChange((value) => this.owner.setAiApiKey(value.trim()));
-              });
-            },
+            type: "page",
+            name: "AI 服务",
+            desc: "只在你点检查、刷新或导入时联网。",
+            displayValue: () => `${this.owner.ai.provider(settings.ai).name} · ${settings.ai.model || "—"}`,
+            status: () => (this.owner.ai.hasKey(settings.ai) ? null : "warning"),
+            page: () => new AiServicePage(this),
             visible: aiOn
-          },
-          {
-            name: "API base URL",
-            desc: "仅允许 HTTPS；本机 localhost 可使用 HTTP。保存前会移除用户名、密码、查询参数和片段。",
-            control: { type: "text", key: "aiBaseUrl", placeholder: "https://api.openai.com/v1" }, visible: aiOn
-          },
-          {
-            name: "模型名称",
-            desc: "不预设模型，避免替你选择费用或供应商；填写你的服务实际支持的模型 ID。",
-            control: { type: "text", key: "aiModel", placeholder: "例如：服务商提供的模型 ID" }, visible: aiOn
           },
           {
             name: "我的当前目标",
             desc: "帮助 AI 判断相关性和可连接项目；不要填写密码、证件号等敏感信息。",
             control: { type: "textarea", key: "userContext", rows: 5, placeholder: "例如：医学研究、日本生活、AI 产品开发……" }, visible: aiOn
           },
-          {
-            name: "清除 API key",
-            desc: "立即从 SecretStorage 移除已保存的 key。",
-            render: (setting) => {
-              setting.addButton((button) => button
-                .setButtonText("清除")
-                .setDestructive()
-                .setDisabled(!this.owner.hasAiApiKey())
-                .onClick(() => {
-                  this.owner.setAiApiKey("");
-                  button.setDisabled(true);
-                  new Notice("已清除 API key。");
-                }));
-            },
-            visible: () => settings.aiEnabled || this.owner.hasAiApiKey()
-          }
         ]
       }
     ];
+  }
+
+  /** Saves the AI slot changed on its own page and refreshes the entry's value and warning. */
+  async saveAi(slot: AiServiceSlot): Promise<void> {
+    this.owner.settings.ai = slot;
+    await this.owner.saveSettings();
+    this.update();
+  }
+}
+
+/**
+ * The shared "AI service" group: provider, Keychain key with Check and balance, recommended models.
+ * Knowledge cards send text only, so Claude Code and Codex on this computer are offered on desktop.
+ * Nothing is requested until the user presses Check or Refresh.
+ */
+class AiServicePage extends SettingPage {
+  private ui: { destroy(): void } | null = null;
+  private stopGroups: (() => void) | null = null;
+
+  constructor(private readonly tab: EvidenceInboxSettingTab) {
+    super();
+    this.title = "AI 服务";
+  }
+
+  display(): void {
+    const el = this.containerEl;
+    this.ui?.destroy();
+    el.empty();
+    el.addClass("evidence-inbox-settings", "ap", "ap-settings");
+    this.ui = renderAiSettings(el, {
+      app: this.tab.app,
+      client: this.tab.owner.ai,
+      slot: this.tab.owner.settings.ai,
+      scene: "cheap",
+      lang: AI_LANG,
+      // The page title already says AI service.
+      heading: false,
+      privateContent: true,
+      allowLocalAgents: true,
+      onChange: (slot) => this.tab.saveAi(slot)
+    });
+    this.stopGroups?.();
+    this.stopGroups = watchSettingGroups(el);
+  }
+
+  hide(): void {
+    this.ui?.destroy();
+    this.ui = null;
+    this.stopGroups?.();
+    this.stopGroups = null;
+    super.hide();
   }
 }

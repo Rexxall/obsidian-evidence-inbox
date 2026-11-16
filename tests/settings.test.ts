@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { aiIsConfigured, DEFAULT_SETTINGS, normalizeSettings } from "../src/settings";
+import { DEFAULT_AI } from "../src/ai/migrate";
+import { resolveProvider, type AiSlot } from "../src/vendor/rex-ai-kit/index";
 
 describe("settings normalization", () => {
   it("repairs unsafe folders and caps the batch size", () => {
@@ -9,33 +11,30 @@ describe("settings normalization", () => {
     expect(settings.maxBatchSize).toBe(10);
   });
 
-  it("requires explicit AI enablement, key, base URL and model", () => {
-    const settings = normalizeSettings({
-      aiEnabled: true,
-      aiBaseUrl: "https://api.example.test/v1",
-      aiModel: "model-id"
-    });
-    expect(aiIsConfigured(settings, "secret")).toBe(true);
-    expect(aiIsConfigured(settings, "")).toBe(false);
+  it("requires AI switched on, a key and a model", () => {
+    const client = (hasKey: boolean) => ({ hasKey: () => hasKey, provider: (slot: AiSlot) => resolveProvider(slot) });
+    const on = normalizeSettings({ aiEnabled: true });
+    expect(aiIsConfigured(on, client(true))).toBe(true);
+    expect(aiIsConfigured(on, client(false))).toBe(false);
+    expect(aiIsConfigured(on, null)).toBe(false);
+    expect(aiIsConfigured(normalizeSettings({ aiEnabled: false }), client(true))).toBe(false);
+    expect(aiIsConfigured(normalizeSettings({ aiEnabled: true, ai: { provider: "openai", model: "" } }), client(true))).toBe(false);
+    // A custom server with no address cannot be called.
+    expect(aiIsConfigured(normalizeSettings({ aiEnabled: true, ai: { provider: "custom", model: "m" } }), client(true))).toBe(false);
   });
 
-  it("never persists AI endpoint credentials, queries, or fragments", () => {
-    const settings = normalizeSettings({
-      aiBaseUrl: "https://user:secret@provider.example/v1?api_key=private#fragment"
-    });
-    expect(settings.aiBaseUrl).toBe("https://provider.example/v1");
+  it("starts on the default AI service and drops the old address fields", () => {
+    const settings = normalizeSettings({ aiBaseUrl: "https://user:secret@provider.example/v1?api_key=private", aiModel: "m" });
+    expect(settings.ai).toEqual(DEFAULT_AI);
     expect(JSON.stringify(settings)).not.toContain("secret");
-    expect(JSON.stringify(settings)).not.toContain("api_key");
+    expect(JSON.stringify(settings)).not.toContain("aiBaseUrl");
   });
 
-  it("does not silently redirect an invalid provider URL to the default service", () => {
-    const settings = normalizeSettings({
-      aiEnabled: true,
-      aiBaseUrl: "http://10.0.0.4/v1",
-      aiModel: "provider-model"
-    });
-    expect(settings.aiBaseUrl).toBe("");
-    expect(aiIsConfigured(settings, "provider-key")).toBe(false);
+  it("keeps a saved AI slot and model cache", () => {
+    const cache = { openai: { at: 1, models: [{ id: "gpt-6-luna" }] } };
+    const settings = normalizeSettings({ ai: { provider: "deepseek", model: "deepseek-flash", secretName: "my-key" }, modelCache: cache });
+    expect(settings.ai).toEqual({ provider: "deepseek", model: "deepseek-flash", secretName: "my-key" });
+    expect(settings.modelCache).toEqual(cache);
   });
 
   it("repairs malformed persisted value types without blocking plugin load", () => {

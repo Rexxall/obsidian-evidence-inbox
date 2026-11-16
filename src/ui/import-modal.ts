@@ -3,7 +3,6 @@ import type EvidenceInboxPlugin from "../main";
 import type { ImportOptions, ImportResult, KnowledgeTemplateId, PreviewItem } from "../types";
 import { KNOWLEDGE_TEMPLATES } from "../core/knowledge-templates";
 import { extractShareUrls } from "../core/urls";
-import { aiIsConfigured } from "../settings";
 import { sanitizeDiagnostic } from "../core/security";
 import { EvidenceImportService, type BatchImportResult } from "../import/import-service";
 import { createObsidianPicker } from "./obsidian-picker";
@@ -167,7 +166,7 @@ export class EvidenceImportModal extends Modal {
       this.app,
       this.owner.settings,
       this.owner.http,
-      this.owner.getAiApiKey(),
+      this.owner.ai,
       controller.signal
     );
     try {
@@ -258,12 +257,12 @@ export class EvidenceImportModal extends Modal {
         this.localizeImages = value;
       }));
 
-    const aiReady = aiIsConfigured(this.owner.settings, this.owner.getAiApiKey());
+    const aiReady = this.owner.aiReady();
     const aiSetting = new Setting(options)
       .setName("用 AI 生成知识卡")
       .setDesc(aiReady
-        ? "会把标题、作者、标签、正文和设置中的“我的当前目标”发送到已配置 API；图片不发送。"
-        : "AI 默认关闭。需要先在插件设置中启用，并填写 Key、Base URL 与模型。")
+        ? "会把标题、作者、标签、正文和设置中的“我的当前目标”发送到所选 AI 服务；图片不发送。"
+        : "AI 默认关闭。需要先在插件设置中启用，并在“AI 服务”里选好服务商、密钥和模型。")
       .addToggle((toggle) => toggle
         .setValue(this.generateWithAi)
         .setDisabled(this.template === "raw" || !aiReady)
@@ -340,7 +339,7 @@ export class EvidenceImportModal extends Modal {
       this.app,
       this.owner.settings,
       this.owner.http,
-      this.owner.getAiApiKey(),
+      this.owner.ai,
       controller.signal
     );
     try {

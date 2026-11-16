@@ -5,6 +5,22 @@ import { normalizeSettings } from "../src/settings";
 import { EvidenceVaultWriter } from "../src/vault/vault-writer";
 import type { EvidenceSource, PreviewFailure, PreviewSuccess } from "../src/types";
 import type { HttpGateway, HttpBinaryResponse, HttpTextResponse } from "../src/network/http";
+import type { KnowledgeAi } from "../src/network/ai-client";
+import { AiError, resolveProvider, type CompleteOptions } from "../src/vendor/rex-ai-kit/index";
+
+/** Stands in for the shared AI client: a key is present, replies come from `reply`. */
+function fakeAi(reply: () => string): KnowledgeAi & { calls: Array<Omit<CompleteOptions, "model">> } {
+  const calls: Array<Omit<CompleteOptions, "model">> = [];
+  return {
+    calls,
+    hasKey: () => true,
+    provider: (slot) => resolveProvider(slot, "zh"),
+    complete: async (_slot, options) => {
+      calls.push(options);
+      return { text: reply() };
+    }
+  };
+}
 
 interface FakeFile {
   path: string;
@@ -356,9 +372,10 @@ describe("batch import transaction", () => {
     const { app, textFiles } = fakeApp();
     const id = "67abc1230000000055555555";
     await app.vault.create("existing-user-note.md", `---\nevidence_source_id: "${id}"\n---\n用户原文`);
-    const settings = normalizeSettings({ aiEnabled: true, aiModel: "configured-model" });
+    const settings = normalizeSettings({ aiEnabled: true });
     const http = new FakeHttp();
-    const service = new EvidenceImportService(app, settings, http, "configured-key");
+    const ai = fakeAi(() => "{}");
+    const service = new EvidenceImportService(app, settings, http, ai);
     const batch = await service.importPreviews(
       [preview(source(id, true))],
       { template: "creator", localizeImages: true, generateWithAi: true }
@@ -366,6 +383,7 @@ describe("batch import transaction", () => {
     expect(batch.results[0]?.outcome).toBe("skipped");
     expect(http.binaryCalls).toBe(0);
     expect(http.postCalls).toBe(0);
+    expect(ai.calls).toHaveLength(0);
     expect(textFiles.get("existing-user-note.md")).toContain("用户原文");
   });
 
@@ -451,7 +469,7 @@ describe("batch import transaction", () => {
     const { app, textFiles } = fakeApp();
     const settings = normalizeSettings({});
     const controller = new AbortController();
-    const service = new EvidenceImportService(app, settings, new FakeHttp(), "", controller.signal);
+    const service = new EvidenceImportService(app, settings, new FakeHttp(), null, controller.signal);
     const operation = service.importPreviews(
       [
         preview(source("67abc1230000000011111111")),
@@ -464,5 +482,47 @@ describe("batch import transaction", () => {
     );
     await expect(operation).rejects.toThrow("操作已取消");
     expect([...textFiles.keys()].filter((path) => path.startsWith(settings.captureFolder))).toHaveLength(1);
+  });
+
+  it("writes the knowledge card from the shared AI client with JSON mode and a timeout", async () => {
+    const { app, textFiles } = fakeApp();
+    const settings = normalizeSettings({ aiEnabled: true });
+    const ai = fakeAi(() => JSON.stringify({ insight: "核心洞察来自 AI", claims: [], nextAction: "下一步" }));
+    const service = new EvidenceImportService(app, settings, new FakeHttp(), ai);
+    const batch = await service.importPreviews(
+      [preview(source("67abc1230000000077777777"))],
+      { template: "creator", localizeImages: false, generateWithAi: true }
+    );
+    expect(ai.calls).toHaveLength(1);
+    expect(ai.calls[0]?.json).toBe(true);
+    expect(ai.calls[0]?.timeoutMs).toBeGreaterThan(0);
+    const path = batch.results[0]?.path ?? "";
+    expect(textFiles.get(path)).toContain("核心洞察来自 AI");
+  });
+
+  it("keeps the note and names the service and next step when the AI call fails", async () => {
+    const { app, textFiles } = fakeApp();
+    const settings = normalizeSettings({ aiEnabled: true });
+    const ai = fakeAi(() => { throw new AiError("HTTP 401", "auth", 401, undefined, "OpenAI"); });
+    const service = new EvidenceImportService(app, settings, new FakeHttp(), ai);
+    const batch = await service.importPreviews(
+      [preview(source("67abc1230000000088888888"))],
+      { template: "creator", localizeImages: false, generateWithAi: true }
+    );
+    const path = batch.results[0]?.path ?? "";
+    expect(textFiles.get(path)).toContain("OpenAI：密钥被拒绝");
+  });
+
+  it("reports a reply without JSON as the service's unreadable reply", async () => {
+    const { app, textFiles } = fakeApp();
+    const settings = normalizeSettings({ aiEnabled: true });
+    const ai = fakeAi(() => "这里没有 JSON");
+    const service = new EvidenceImportService(app, settings, new FakeHttp(), ai);
+    const batch = await service.importPreviews(
+      [preview(source("67abc1230000000099999999"))],
+      { template: "creator", localizeImages: false, generateWithAi: true }
+    );
+    const path = batch.results[0]?.path ?? "";
+    expect(textFiles.get(path)).toContain("OpenAI：服务有回复，但格式读不出来");
   });
 });

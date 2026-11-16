@@ -13,7 +13,8 @@ import { aiIsConfigured } from "../settings";
 import { createPlaceholderCard } from "../core/knowledge-templates";
 import { sanitizeDiagnostic, stripUrlSecrets } from "../core/security";
 import { UnsupportedXhsPageError } from "../core/xhs-parser";
-import { AiKnowledgeClient } from "../network/ai-client";
+import { AiKnowledgeClient, type KnowledgeAi } from "../network/ai-client";
+import { describeAiError } from "../ai/lang";
 import type { HttpGateway } from "../network/http";
 import { MediaDownloader, reuseExistingMedia } from "../network/media-downloader";
 import { XhsPublicClient } from "../network/xhs-client";
@@ -65,18 +66,18 @@ export class EvidenceImportService {
   static pageGapMs = 1_200;
 
   private readonly publicClient: XhsPublicClient;
-  private readonly aiClient: AiKnowledgeClient;
+  private readonly aiClient: AiKnowledgeClient | null;
   private readonly writer: EvidenceVaultWriter;
 
   constructor(
     private readonly app: App,
     private readonly settings: EvidenceInboxSettings,
     private readonly http: HttpGateway,
-    private readonly aiApiKey = "",
+    private readonly ai: KnowledgeAi | null = null,
     private readonly signal?: AbortSignal
   ) {
     this.publicClient = new XhsPublicClient(http, signal);
-    this.aiClient = new AiKnowledgeClient(http, signal);
+    this.aiClient = ai ? new AiKnowledgeClient(ai, signal) : null;
     this.writer = new EvidenceVaultWriter(app, settings);
   }
 
@@ -189,17 +190,18 @@ export class EvidenceImportService {
     let aiError: string | undefined;
     let knowledgeCard = options.template === "raw" ? undefined : createPlaceholderCard(options.template);
     if (!preserveKnowledgeCard && options.template !== "raw" && options.generateWithAi) {
-      if (!aiIsConfigured(this.settings, this.aiApiKey)) {
+      if (!this.aiClient || !aiIsConfigured(this.settings, this.ai)) {
         aiState = "failed";
         aiError = "AI 尚未完成配置，已保留可手填模板。";
       } else {
         try {
-          knowledgeCard = await this.aiClient.generate(source, options.template, this.settings, this.aiApiKey);
+          knowledgeCard = await this.aiClient.generate(source, options.template, this.settings);
           aiState = "complete";
         } catch (error) {
           this.assertActive();
           aiState = "failed";
-          aiError = sanitizeDiagnostic(error);
+          // Names the service and the next step; keys are already removed, and removed again here.
+          aiError = sanitizeDiagnostic(describeAiError(error));
         }
       }
     }

@@ -5,20 +5,26 @@ import { EvidenceImportModal } from "./ui/import-modal";
 import { EvidenceInboxOnboardingModal } from "./ui/onboarding-modal";
 import { EvidenceInboxSettingTab } from "./ui/settings-tab";
 import { decorateNoteZones } from "./ui/note-zones";
+import { createAiClient } from "./ai/kit";
+import { migrateAiSettings } from "./ai/migrate";
+import { aiIsConfigured } from "./settings";
+import type { AiClient } from "./vendor/rex-ai-kit/index";
 
 export default class EvidenceInboxPlugin extends Plugin {
-  private static readonly AI_SECRET_ID = "evidence-inbox-ai-key";
   declare settings: EvidenceInboxSettings;
+  ai!: AiClient;
   readonly http = new ObsidianHttpGateway();
   private importModal: EvidenceImportModal | null = null;
 
   async onload(): Promise<void> {
-    const loaded = await this.loadData() as Partial<EvidenceInboxSettings> | null;
+    const loaded: unknown = await this.loadData();
     this.settings = normalizeSettings(loaded, this.app.vault.configDir);
-    const sanitizedAiEndpoint = Boolean(
-      loaded && typeof loaded.aiBaseUrl === "string" && loaded.aiBaseUrl !== this.settings.aiBaseUrl
-    );
-    if (sanitizedAiEndpoint) await this.saveSettings();
+    // Address, model and key name from 0.3.x and earlier become one AI slot; the old key keeps being read.
+    const { ai, changed } = migrateAiSettings(loaded, this.app.secretStorage);
+    this.settings.ai = ai;
+    // No network here: the client only sends requests from Check, Refresh or an import.
+    this.ai = createAiClient(this.app.secretStorage, this.settings.modelCache);
+    if (loaded && changed) await this.saveSettings();
     this.addSettingTab(new EvidenceInboxSettingTab(this.app, this));
     this.registerMarkdownPostProcessor((element, context) => decorateNoteZones(element, context));
     this.addRibbonIcon("inbox", "导入小红书笔记", () => this.openImportModal());
@@ -44,6 +50,7 @@ export default class EvidenceInboxPlugin extends Plugin {
   }
 
   async saveSettings(): Promise<void> {
+    if (this.ai) this.settings.modelCache = this.ai.cache.toJSON();
     await this.saveData(this.settings);
   }
 
@@ -70,15 +77,8 @@ export default class EvidenceInboxPlugin extends Plugin {
     new EvidenceInboxOnboardingModal(this.app, this).open();
   }
 
-  getAiApiKey(): string {
-    return this.app.secretStorage.getSecret(EvidenceInboxPlugin.AI_SECRET_ID) ?? "";
-  }
-
-  hasAiApiKey(): boolean {
-    return Boolean(this.getAiApiKey());
-  }
-
-  setAiApiKey(value: string): void {
-    this.app.secretStorage.setSecret(EvidenceInboxPlugin.AI_SECRET_ID, value.trim());
+  /** AI is on and the chosen service has what it needs to be called. */
+  aiReady(): boolean {
+    return aiIsConfigured(this.settings, this.ai);
   }
 }
